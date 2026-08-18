@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/tool-spec.json",
+  "title": "ToolSpec",
+  "type": "object",
+  "required": ["name", "description", "input_schema"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "input_schema": { "type": "object" },
+    "output_schema": { "type": ["object", "null"], "default": null },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "default": "low"
+    },
+    "requires_approval": { "type": "boolean", "default": false },
+    "enabled_for_evaluation": { "type": "boolean", "default": true }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/run-result.json",
+  "title": "RunResult",
+  "type": "object",
+  "required": ["case_id", "tool_calls"],
+  "additionalProperties": false,
+  "properties": {
+    "case_id": { "type": "string" },
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool_name", "arguments"],
+        "additionalProperties": false,
+        "properties": {
+          "tool_name": { "type": "string" },
+          "arguments": { "type": "object" },
+          "result": { "type": ["object", "null"], "default": null }
+        }
+      }
+    },
+    "final_answer": { "type": ["object", "null"], "default": null },
+    "blocked_pending_approval": { "type": "boolean", "default": false },
+    "raw_events": {
+      "type": "array",
+      "items": { "type": "object" },
+      "default": [],
+      "description": "Raw per-step payloads; consumed by the Trace Model (separate spec) to build a full trace with timestamps and sequence numbers"
+    }
+  }
+}
