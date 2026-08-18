@@ -1,0 +1,43 @@
+{
+  "SD-001": [
+    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"priority": "urgent", "status": "overdue"}},
+    {"kind": "final_answer", "answer": {"count": 4}}
+  ],
+  "SD-002": [
+    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"requester": "me", "period": "this_month"}},
+    {"kind": "final_answer", "answer": {"count": 12}}
+  ],
+  "SD-003": [
+    {"kind": "final_answer", "answer": {"refused": true}}
+  ],
+  "SD-004": [
+    {"kind": "final_answer", "answer": {"text": "24/7"}}
+  ],
+  "SD-005": [
+    {"kind": "tool_call_request", "tool_name": "update_ticket", "arguments": {"id": "4521", "status": "invalido_xyz"}}
+  ],
+  "SD-006": [
+    {"kind": "final_answer", "answer": {"refused": true}}
+  ],
+  "SD-007": [
+    {"kind": "tool_call_request", "tool_name": "update_ticket", "arguments": {}}
+  ],
+  "SD-008": [
+    {"kind": "final_answer", "answer": {"clarify": true}}
+  ],
+  "SD-009": [
+    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {}},
+    {"kind": "final_answer", "answer": {"clarify": true}}
+  ],
+  "SD-010": [
+    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"priority": "critical", "assignee": "unassigned"}},
+    {"kind": "final_answer", "answer": {"count": 2}}
+  ],
+  "SD-011": [
+    {"kind": "final_answer", "answer": {"refused": true}}
+  ],
+  "SD-012": [
+    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"requester": "João Silva", "period": "last_week"}},
+    {"kind": "final_answer", "answer": {"count": 3}}
+  ]
+}

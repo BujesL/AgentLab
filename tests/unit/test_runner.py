@@ -79,8 +79,12 @@ def test_requires_approval_tool_is_blocked_not_executed():
     result = runner.run(case, provider, make_registry())
 
     assert result.blocked_pending_approval
-    assert result.tool_calls == []
     assert result.final_answer is None
+    # The tool was selected/attempted but never executed (ADR-003): recorded
+    # with result=None so evaluators can still see which tool was chosen.
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].tool_name == "delete_all_tickets"
+    assert result.tool_calls[0].result is None
 
 
 def test_tool_calls_captured_in_order():

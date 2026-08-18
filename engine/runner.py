@@ -93,6 +93,13 @@ class AgentRunner:
                         "timestamp": time.time(),
                     }
                 )
+                # Recorded with result=None: the tool was selected/attempted but
+                # never executed (ADR-003). Evaluators (e.g. tool_selection,
+                # tool_argument_accuracy) need to see which tool was chosen even
+                # when approval blocks execution — see docs/specs/cli/tasks.md.
+                tool_calls.append(
+                    ToolCall(tool_name=step.tool_name, arguments=arguments, result=None)
+                )
                 return RunResult(
                     case_id=case.id,
                     tool_calls=tool_calls,

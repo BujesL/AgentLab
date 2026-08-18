@@ -72,3 +72,15 @@ execução (quais tools foram chamadas, com quais argumentos, e a resposta final
       o `RunResult` indica `blocked_pending_approval: true`.
 - [ ] `ToolRegistry` rejeita registro de tool sem `input_schema`.
 - [ ] `RunResult` captura tool calls na ordem em que ocorreram.
+
+## Addendum (2026-08-18, descoberto durante a spec de CLI)
+
+Rodar o pipeline ponta a ponta (`docs/specs/cli/`) contra o dataset MVP revelou
+que um caso bloqueado por `requires_approval` registrava `tool_calls == []`,
+impedindo os avaliadores de Tool Selection/Tool Argument Accuracy (spec
+`evaluation-metrics`) de saber qual tool foi *escolhida* pelo agente, mesmo sem
+ser executada. Corrigido: `AgentRunner` agora registra a tool bloqueada em
+`tool_calls` com `result=None` (distinguível de uma execução real, que sempre
+tem `result` preenchido, mesmo que `{}`). `blocked_pending_approval=True`
+continua sendo o sinal de "não executou de fato" — `tool_calls` agora responde
+"o que o agente tentou fazer", que é uma métrica ortogonal.
