@@ -8,6 +8,11 @@ from engine.cli_scripts import load_scripts
 from engine.datasets import load_dataset, validate_dataset
 from engine.evaluators.aggregate import evaluate_case
 from engine.evaluators.models import EvaluationResult
+from engine.experiments.repository import (
+    create_experiment,
+    get_or_create_agent,
+    get_or_create_agent_version,
+)
 from engine.persistence.repository import (
     apply_schema,
     get_connection,
@@ -37,6 +42,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_parser.add_argument("--model", default="mock")
     evaluate_parser.add_argument("--no-persist", action="store_true")
+    evaluate_parser.add_argument("--agent", help="agent name; creates an Experiment when set")
+    evaluate_parser.add_argument("--agent-version", default="0.1.0")
     evaluate_parser.set_defaults(handler=handle_evaluate)
 
     trace_parser = sub.add_parser("trace")
@@ -73,6 +80,16 @@ def handle_evaluate(args: argparse.Namespace) -> int:
         else:
             print("aviso: DATABASE_URL não definida, pulando persistência")
 
+    experiment_id = None
+    if conn is not None and args.agent:
+        agent = get_or_create_agent(conn, args.agent)
+        agent_version = get_or_create_agent_version(conn, agent.id, args.agent_version)
+        experiment = create_experiment(
+            conn, agent_version.id, dataset.id, args.model
+        )
+        experiment_id = experiment.id
+        print(f"experiment: {experiment_id}")
+
     entries: list[tuple[str, EvaluationResult, Trace]] = []
 
     for case in dataset.cases:
@@ -82,12 +99,14 @@ def handle_evaluate(args: argparse.Namespace) -> int:
 
         provider = MockProviderAdapter(scripts[case.id])
         run_result = AgentRunner().run(case, provider, registry)
-        trace = build_trace(run_result, model=args.model)
+        trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
         evaluation = evaluate_case(case, run_result)
 
         if conn is not None:
             save_trace(conn, trace)
-            save_evaluation_result(conn, evaluation, trace_id=trace.id)
+            save_evaluation_result(
+                conn, evaluation, trace_id=trace.id, experiment_id=experiment_id
+            )
 
         entries.append((case.id, evaluation, trace))
         status = "PASS" if evaluation.passed else "FAIL"

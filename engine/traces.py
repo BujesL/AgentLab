@@ -47,7 +47,9 @@ def _assert_no_forbidden_keys(payload: dict) -> None:
             _assert_no_forbidden_keys(value)
 
 
-def build_trace(run_result: RunResult, model: str = "mock") -> Trace:
+def build_trace(
+    run_result: RunResult, model: str = "mock", experiment_id: str | None = None
+) -> Trace:
     if not run_result.raw_events:
         raise ValueError(f"run_result for case {run_result.case_id} has no raw_events")
 
@@ -72,6 +74,7 @@ def build_trace(run_result: RunResult, model: str = "mock") -> Trace:
 
     return Trace(
         id=str(uuid4()),
+        experiment_id=experiment_id,
         case_id=run_result.case_id,
         started_at=started_at,
         duration_ms=duration_ms,

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/experiment-summary.json",
+  "title": "ExperimentSummary",
+  "type": "object",
+  "required": ["experiment_id", "total_cases", "passed", "accuracy_pct", "avg_latency_ms", "avg_cost"],
+  "additionalProperties": false,
+  "properties": {
+    "experiment_id": { "type": "string" },
+    "total_cases": { "type": "integer", "minimum": 0 },
+    "passed": { "type": "integer", "minimum": 0 },
+    "accuracy_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "avg_latency_ms": { "type": "number", "minimum": 0 },
+    "avg_cost": { "type": "number", "minimum": 0 }
+  }
+}

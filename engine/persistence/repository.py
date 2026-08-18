@@ -87,15 +87,27 @@ def get_trace(conn: psycopg.Connection, trace_id: str) -> Trace | None:
     )
 
 
-def save_evaluation_result(conn: psycopg.Connection, result: EvaluationResult, trace_id: str | None = None) -> int:
+def save_evaluation_result(
+    conn: psycopg.Connection,
+    result: EvaluationResult,
+    trace_id: str | None = None,
+    experiment_id: str | None = None,
+) -> int:
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO evaluation_result (case_id, trace_id, scores, passed, failure_reason)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO evaluation_result (case_id, trace_id, experiment_id, scores, passed, failure_reason)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
-            (result.case_id, trace_id, Jsonb(result.scores), result.passed, result.failure_reason),
+            (
+                result.case_id,
+                trace_id,
+                experiment_id,
+                Jsonb(result.scores),
+                result.passed,
+                result.failure_reason,
+            ),
         )
         new_id = cur.fetchone()[0]
     conn.commit()

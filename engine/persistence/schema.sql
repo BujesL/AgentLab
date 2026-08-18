@@ -5,6 +5,29 @@ CREATE TABLE IF NOT EXISTS dataset (
     description TEXT NOT NULL DEFAULT ''
 );
 
+CREATE TABLE IF NOT EXISTS agent (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS agent_version (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
+    version TEXT NOT NULL,
+    code_ref TEXT NOT NULL DEFAULT '',
+    UNIQUE (agent_id, version)
+);
+
+CREATE TABLE IF NOT EXISTS experiment (
+    id TEXT PRIMARY KEY,
+    agent_version_id TEXT NOT NULL REFERENCES agent_version(id) ON DELETE CASCADE,
+    dataset_id TEXT NOT NULL,
+    model TEXT NOT NULL,
+    config JSONB NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'running'
+);
+
 CREATE TABLE IF NOT EXISTS trace (
     id UUID PRIMARY KEY,
     experiment_id TEXT,
@@ -29,7 +52,11 @@ CREATE TABLE IF NOT EXISTS evaluation_result (
     id SERIAL PRIMARY KEY,
     case_id TEXT NOT NULL,
     trace_id UUID REFERENCES trace(id) ON DELETE SET NULL,
+    experiment_id TEXT REFERENCES experiment(id) ON DELETE SET NULL,
     scores JSONB NOT NULL,
     passed BOOLEAN NOT NULL,
     failure_reason TEXT
 );
+
+ALTER TABLE evaluation_result ADD COLUMN IF NOT EXISTS experiment_id TEXT
+    REFERENCES experiment(id) ON DELETE SET NULL;
