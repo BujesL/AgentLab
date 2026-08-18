@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from engine.tools.models import ToolSpec
+from engine.usage import TokenUsage
 
 
 @dataclass
@@ -10,12 +11,14 @@ class ToolCallRequest:
     kind: Literal["tool_call_request"] = "tool_call_request"
     tool_name: str = ""
     arguments: dict | None = None
+    usage: TokenUsage | None = None
 
 
 @dataclass
 class FinalAnswer:
     kind: Literal["final_answer"] = "final_answer"
     answer: dict | None = None
+    usage: TokenUsage | None = None
 
 
 ProviderStep = ToolCallRequest | FinalAnswer

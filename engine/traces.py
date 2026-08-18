@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
+from engine.cost import estimate_cost
 from engine.runner import RunResult
 
 FORBIDDEN_KEYS = {"reasoning", "thought", "chain_of_thought"}
@@ -46,7 +47,7 @@ def _assert_no_forbidden_keys(payload: dict) -> None:
             _assert_no_forbidden_keys(value)
 
 
-def build_trace(run_result: RunResult) -> Trace:
+def build_trace(run_result: RunResult, model: str = "mock") -> Trace:
     if not run_result.raw_events:
         raise ValueError(f"run_result for case {run_result.case_id} has no raw_events")
 
@@ -66,10 +67,15 @@ def build_trace(run_result: RunResult) -> Trace:
     started_at = events[0].timestamp
     duration_ms = max(0.0, (events[-1].timestamp - started_at) * 1000)
 
+    token_usage = run_result.token_usage.total_tokens if run_result.token_usage else None
+    cost = estimate_cost(run_result.token_usage, model) if run_result.token_usage else None
+
     return Trace(
         id=str(uuid4()),
         case_id=run_result.case_id,
         started_at=started_at,
         duration_ms=duration_ms,
+        token_usage=token_usage,
+        cost=cost,
         events=events,
     )
