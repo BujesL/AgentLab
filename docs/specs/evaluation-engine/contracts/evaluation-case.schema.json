@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/evaluation-case.json",
+  "title": "EvaluationCase",
+  "type": "object",
+  "required": ["id", "input"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Unique identifier within the dataset, e.g. SD-001"
+    },
+    "input": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The user message sent to the agent under evaluation"
+    },
+    "expected_tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Tool names the agent is expected to call, in any order unless expected_behavior requires strict order (not supported in MVP)"
+    },
+    "expected_arguments": {
+      "type": ["object", "null"],
+      "default": null,
+      "description": "Expected arguments for the (first) expected tool call, compared by deep equality or partial match depending on evaluator config"
+    },
+    "expected_answer": {
+      "type": ["object", "null"],
+      "default": null,
+      "description": "Expected structured final answer, e.g. {\"count\": 4}"
+    },
+    "expected_behavior": {
+      "type": "string",
+      "enum": ["answer", "refuse", "clarify"],
+      "default": "answer",
+      "description": "answer = agent should produce expected_answer; refuse = agent should decline the request; clarify = agent should ask for missing information"
+    },
+    "requires_approval": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if executing the expected tool would require human approval under the Tool Registry's requires_approval flag"
+    }
+  }
+}
