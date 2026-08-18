@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/trace-event.json",
+  "title": "TraceEvent",
+  "type": "object",
+  "required": ["sequence", "type", "payload", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "sequence": { "type": "integer", "minimum": 0 },
+    "type": {
+      "type": "string",
+      "enum": [
+        "input",
+        "tool_call_request",
+        "tool_result",
+        "final_answer",
+        "blocked_pending_approval"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Observable data only — never a chain-of-thought/reasoning field (ADR-004)"
+    },
+    "timestamp": { "type": "number" }
+  }
+}

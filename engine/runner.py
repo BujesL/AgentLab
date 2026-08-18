@@ -1,3 +1,5 @@
+import time
+
 from pydantic import BaseModel
 
 from engine.models import EvaluationCase
@@ -26,13 +28,16 @@ class AgentRunner:
         provider: ProviderAdapter,
         registry: ToolRegistry,
     ) -> RunResult:
-        history: list[dict] = []
+        history: list[dict] = [{"type": "input", "input": case.input, "timestamp": time.time()}]
         tool_calls: list[ToolCall] = []
 
         for _ in range(self.max_iterations):
             step = provider.step(case.input, registry.enabled_tools(), history)
 
             if isinstance(step, FinalAnswer):
+                history.append(
+                    {"type": "final_answer", "answer": step.answer, "timestamp": time.time()}
+                )
                 return RunResult(
                     case_id=case.id,
                     tool_calls=tool_calls,
@@ -44,10 +49,22 @@ class AgentRunner:
             tool = registry.get(step.tool_name)
             arguments = step.arguments or {}
             history.append(
-                {"type": "tool_call_request", "tool": step.tool_name, "arguments": arguments}
+                {
+                    "type": "tool_call_request",
+                    "tool": step.tool_name,
+                    "arguments": arguments,
+                    "timestamp": time.time(),
+                }
             )
 
             if tool.requires_approval:
+                history.append(
+                    {
+                        "type": "blocked_pending_approval",
+                        "tool": step.tool_name,
+                        "timestamp": time.time(),
+                    }
+                )
                 return RunResult(
                     case_id=case.id,
                     tool_calls=tool_calls,
@@ -60,7 +77,12 @@ class AgentRunner:
                 ToolCall(tool_name=step.tool_name, arguments=arguments, result=result)
             )
             history.append(
-                {"type": "tool_result", "tool": step.tool_name, "result": result}
+                {
+                    "type": "tool_result",
+                    "tool": step.tool_name,
+                    "result": result,
+                    "timestamp": time.time(),
+                }
             )
 
         raise RuntimeError(f"max_iterations exceeded for case {case.id}")

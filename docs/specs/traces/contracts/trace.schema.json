@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/trace.json",
+  "title": "Trace",
+  "type": "object",
+  "required": ["id", "case_id", "started_at", "duration_ms", "events"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "experiment_id": { "type": ["string", "null"], "default": null },
+    "case_id": { "type": "string" },
+    "started_at": { "type": "number" },
+    "duration_ms": { "type": "number", "minimum": 0 },
+    "token_usage": { "type": ["integer", "null"], "default": null },
+    "cost": { "type": ["number", "null"], "default": null },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "trace-event.schema.json" }
+    }
+  }
+}
