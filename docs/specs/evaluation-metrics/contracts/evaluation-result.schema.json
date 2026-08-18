@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/evaluation-result.json",
+  "title": "EvaluationResult",
+  "type": "object",
+  "required": ["case_id", "scores", "passed"],
+  "additionalProperties": false,
+  "properties": {
+    "case_id": { "type": "string" },
+    "scores": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "passed": { "type": "boolean" },
+    "failure_reason": { "type": ["string", "null"], "default": null }
+  }
+}
