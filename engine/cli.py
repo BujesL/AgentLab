@@ -56,6 +56,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="path to a system prompt file; version is derived from its content hash "
         "(only used when --agent is also set)",
     )
+    evaluate_parser.add_argument(
+        "--llm-judge", action="store_true", help="also score answer_accuracy via LLM-as-a-Judge"
+    )
+    evaluate_parser.add_argument(
+        "--judge-model", help="Ollama model for --llm-judge (defaults to --model)"
+    )
     evaluate_parser.set_defaults(handler=handle_evaluate)
 
     trace_parser = sub.add_parser("trace")
@@ -148,7 +154,8 @@ def handle_evaluate(args: argparse.Namespace) -> int:
 
         run_result = AgentRunner().run(case, provider, registry)
         trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
-        evaluation = evaluate_case(case, run_result)
+        judge_model = (args.judge_model or args.model) if args.llm_judge else None
+        evaluation = evaluate_case(case, run_result, llm_judge_model=judge_model)
 
         if conn is not None:
             save_trace(conn, trace)
