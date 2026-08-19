@@ -42,6 +42,19 @@
         `DashboardPage` + mensagem inline (não testado automaticamente,
         só por inspeção de código — ver observação abaixo).
 
+## T11 — Comparação de experimentos (item que fechava a Fase V1, seção 17)
+
+- [x] `app/compare/page.tsx` — tela `/compare?a=ID1&b=ID2`, tabela lado a lado
+      (Total cases, Passed, Accuracy, Avg Latency, Avg Cost).
+      Evidência (2026-08-19): testada com dois experimentos reais criados
+      via CLI (`8849dcea...` model=claude-placeholder, `66cefc36...`
+      model=mock, mesmo dataset). Render real confirmado via HTML da página:
+      `Total cases 12/12`, `Passed 11/11`, `Accuracy 91.7%/91.7%`,
+      `Avg Latency 0.05ms/0.03ms` (diferentes, como esperado — modelos
+      diferentes), `Avg Cost $0.0000/$0.0000` (ambos sem token usage
+      reportado pelo mock provider).
+      `npm run build` continua limpo após adicionar a rota.
+
 ## Observações / débito técnico registrado
 
 - Limiar PASS/FAIL de 100% é placeholder — corrigir quando a spec de
