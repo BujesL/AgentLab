@@ -74,6 +74,10 @@ class OllamaProviderAdapter:
                 "messages": messages,
                 "tools": [_to_ollama_tool(t) for t in tools],
                 "stream": False,
+                # temperature=0 + fixed seed: evaluation runs must be reproducible
+                # (the entire premise of this project), so sampling randomness is
+                # disabled rather than left at Ollama's default (~0.8).
+                "options": {"temperature": 0, "seed": 42},
             },
             timeout=self.timeout,
         )

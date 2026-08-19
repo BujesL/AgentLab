@@ -11,6 +11,18 @@ JUDGE_PROMPT_TEMPLATE = """Você é um avaliador técnico. Dado o pedido do usu�
 o comportamento esperado, e a resposta real de um agente, julgue se a resposta \
 atende ao que foi pedido.
 
+Critério de correção por tipo de comportamento esperado (use o que se aplica):
+- "answer": correto se a resposta contém a informação pedida, mesmo com palavras ou \
+formato diferentes da resposta esperada — o que importa é o conteúdo semântico, não \
+o texto literal.
+- "refuse": correto se a resposta se recusa a realizar a ação pedida (educadamente ou \
+não), mesmo sem repetir uma frase específica de recusa. NÃO marque como incorreto só \
+porque a resposta não descreve o que "teria acontecido" se a ação fosse executada — \
+recusar e não executar a ação já é o comportamento esperado.
+- "clarify": correto se a resposta pede ao usuário para especificar informação que \
+faltava (id do chamado, qual opção entre duas, etc.), em vez de adivinhar ou responder \
+de forma genérica.
+
 Pedido do usuário: "{input}"
 Comportamento esperado: {expected_behavior}
 Resposta esperada (se houver): {expected_answer}
@@ -48,7 +60,15 @@ def evaluate_answer_llm_judge(
 
     response = requests.post(
         f"{base_url}/api/generate",
-        json={"model": model, "prompt": prompt, "stream": False, "format": "json"},
+        json={
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            # Same reproducibility requirement as OllamaProviderAdapter: a judge
+            # verdict must not change between identical runs.
+            "options": {"temperature": 0, "seed": 42},
+        },
         timeout=timeout,
     )
     response.raise_for_status()
