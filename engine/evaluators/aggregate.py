@@ -13,10 +13,15 @@ def evaluate_case(
     evaluations = [
         evaluate_tool_selection(case, run_result),
         evaluate_tool_arguments(case, run_result),
-        evaluate_answer_accuracy(case, run_result),
     ]
     if llm_judge_model:
+        # Substitui (não soma) a comparação exata de answer_accuracy: com AND estrito,
+        # somar os dois só poderia derrubar passed, nunca elevá-lo quando a comparação
+        # exata já reprovou por diferença de formato (texto livre vs. estruturado).
+        # Ver docs/specs/llm-judge/tasks.md para o histórico dessa decisão.
         evaluations.append(evaluate_answer_llm_judge(case, run_result, model=llm_judge_model))
+    else:
+        evaluations.append(evaluate_answer_accuracy(case, run_result))
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)

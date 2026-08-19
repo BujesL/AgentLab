@@ -16,9 +16,22 @@ calibrado".
 1. Um avaliador `evaluate_answer_llm_judge(case, run_result, model) ->
    EvalScore` que usa um LLM (via Ollama, mesma decisão de "estratégia
    gratuita") para julgar semanticamente se a resposta em texto livre
-   satisfaz a intenção do caso — **complementar** ao avaliador
-   determinístico, nunca o substituindo (seção 3: "determinismo antes de
-   IA").
+   satisfaz a intenção do caso.
+
+   **Revisão de design (pós-implementação, ver tasks.md)**: a intenção
+   original era o juiz ser complementar (somado) ao avaliador determinístico
+   de `answer_accuracy`, nunca substituindo-o. Na prática isso se mostrou
+   estruturalmente inviável: `evaluate_case` agrega com AND estrito, então
+   somar um juiz que aprova a uma comparação exata que já reprovou só pode
+   manter ou piorar `passed`, nunca melhorá-lo — o critério de aceitação
+   abaixo ("taxa de aprovação > 0%") é matematicamente impossível de
+   satisfazer com agregação por soma. Decisão final: quando `--llm-judge`
+   está ativo, `evaluate_answer_llm_judge` **substitui**
+   `evaluate_answer_accuracy` (não é somado a ele) — `tool_selection` e
+   `tool_arguments` continuam deterministas e obrigatórios em ambos os
+   casos. Isso preserva "determinismo antes de IA" para chamadas de tool
+   (onde exatidão estrutural ainda faz sentido), e usa IA apenas para o
+   componente que é genuinamente semântico (texto livre).
 2. O prompt de julgamento pede uma saída estruturada (JSON) para que o
    próprio julgamento seja, ele mesmo, parseável deterministicamente — o
    LLM decide o veredito semântico, mas o parsing da resposta do juiz é
