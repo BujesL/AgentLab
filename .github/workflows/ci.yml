@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://agentlab:agentlab_ci@localhost:5432/agentlab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agentlab
+          POSTGRES_PASSWORD: agentlab_ci
+          POSTGRES_DB: agentlab
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r engine/requirements.txt
+
+      - name: Run Python unit tests
+        run: python -m pytest tests/unit -v
+
+      - name: Apply database schema
+        run: |
+          python -c "
+          from engine.persistence.repository import apply_schema, get_connection
+          apply_schema(get_connection())
+          "
+
+      - name: Run Python integration tests
+        run: python -m pytest tests/integration -v
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install and test API
+        working-directory: apps/api
+        run: |
+          npm ci
+          npm test
+
+      - name: Install and build Web dashboard
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
