@@ -6,5 +6,7 @@ __pycache__/
 .env.local
 dist/
 build/
+.next/
+next-env.d.ts
 *.log
 .DS_Store
