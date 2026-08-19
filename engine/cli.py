@@ -13,6 +13,7 @@ from engine.experiments.repository import (
     get_or_create_agent,
     get_or_create_agent_version,
 )
+from engine.prompts.repository import get_or_create_prompt_version
 from engine.persistence.repository import (
     apply_schema,
     get_connection,
@@ -44,6 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument("--no-persist", action="store_true")
     evaluate_parser.add_argument("--agent", help="agent name; creates an Experiment when set")
     evaluate_parser.add_argument("--agent-version", default="0.1.0")
+    evaluate_parser.add_argument(
+        "--prompt-file",
+        help="path to a system prompt file; version is derived from its content hash "
+        "(only used when --agent is also set)",
+    )
     evaluate_parser.set_defaults(handler=handle_evaluate)
 
     trace_parser = sub.add_parser("trace")
@@ -84,11 +90,23 @@ def handle_evaluate(args: argparse.Namespace) -> int:
     if conn is not None and args.agent:
         agent = get_or_create_agent(conn, args.agent)
         agent_version = get_or_create_agent_version(conn, agent.id, args.agent_version)
+
+        prompt_version_id = None
+        if args.prompt_file:
+            content = Path(args.prompt_file).read_text(encoding="utf-8")
+            prompt_version = get_or_create_prompt_version(
+                conn, name=Path(args.prompt_file).stem, content=content
+            )
+            prompt_version_id = prompt_version.id
+            print(f"prompt version: {prompt_version.name}@{prompt_version.version}")
+
         experiment = create_experiment(
-            conn, agent_version.id, dataset.id, args.model
+            conn, agent_version.id, dataset.id, args.model, prompt_version_id=prompt_version_id
         )
         experiment_id = experiment.id
         print(f"experiment: {experiment_id}")
+    elif conn is not None and args.prompt_file:
+        print("aviso: --prompt-file ignorado sem --agent (nenhum experiment para associar)")
 
     entries: list[tuple[str, EvaluationResult, Trace]] = []
 

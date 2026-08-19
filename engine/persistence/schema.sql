@@ -19,14 +19,25 @@ CREATE TABLE IF NOT EXISTS agent_version (
     UNIQUE (agent_id, version)
 );
 
+CREATE TABLE IF NOT EXISTS prompt_version (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    content_hash TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS experiment (
     id TEXT PRIMARY KEY,
     agent_version_id TEXT NOT NULL REFERENCES agent_version(id) ON DELETE CASCADE,
     dataset_id TEXT NOT NULL,
     model TEXT NOT NULL,
     config JSONB NOT NULL DEFAULT '{}',
-    status TEXT NOT NULL DEFAULT 'running'
+    status TEXT NOT NULL DEFAULT 'running',
+    prompt_version_id TEXT REFERENCES prompt_version(id) ON DELETE SET NULL
 );
+
+ALTER TABLE experiment ADD COLUMN IF NOT EXISTS prompt_version_id TEXT
+    REFERENCES prompt_version(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS trace (
     id UUID PRIMARY KEY,

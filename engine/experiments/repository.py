@@ -49,6 +49,7 @@ def create_experiment(
     dataset_id: str,
     model: str,
     config: dict | None = None,
+    prompt_version_id: str | None = None,
 ) -> Experiment:
     experiment_id = str(uuid.uuid4())
     config = config or {}
@@ -56,9 +57,9 @@ def create_experiment(
         from psycopg.types.json import Jsonb
 
         cur.execute(
-            "INSERT INTO experiment (id, agent_version_id, dataset_id, model, config) "
-            "VALUES (%s, %s, %s, %s, %s)",
-            (experiment_id, agent_version_id, dataset_id, model, Jsonb(config)),
+            "INSERT INTO experiment (id, agent_version_id, dataset_id, model, config, prompt_version_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (experiment_id, agent_version_id, dataset_id, model, Jsonb(config), prompt_version_id),
         )
     conn.commit()
     return Experiment(
@@ -67,13 +68,14 @@ def create_experiment(
         dataset_id=dataset_id,
         model=model,
         config=config,
+        prompt_version_id=prompt_version_id,
     )
 
 
 def get_experiment(conn: psycopg.Connection, experiment_id: str) -> Experiment | None:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, agent_version_id, dataset_id, model, config, status "
+            "SELECT id, agent_version_id, dataset_id, model, config, status, prompt_version_id "
             "FROM experiment WHERE id = %s",
             (experiment_id,),
         )
@@ -82,21 +84,21 @@ def get_experiment(conn: psycopg.Connection, experiment_id: str) -> Experiment |
         return None
     return Experiment(
         id=row[0], agent_version_id=row[1], dataset_id=row[2], model=row[3],
-        config=row[4], status=row[5],
+        config=row[4], status=row[5], prompt_version_id=row[6],
     )
 
 
 def list_experiments(conn: psycopg.Connection) -> list[Experiment]:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, agent_version_id, dataset_id, model, config, status "
+            "SELECT id, agent_version_id, dataset_id, model, config, status, prompt_version_id "
             "FROM experiment ORDER BY id ASC"
         )
         rows = cur.fetchall()
     return [
         Experiment(
             id=row[0], agent_version_id=row[1], dataset_id=row[2], model=row[3],
-            config=row[4], status=row[5],
+            config=row[4], status=row[5], prompt_version_id=row[6],
         )
         for row in rows
     ]

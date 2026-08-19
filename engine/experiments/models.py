@@ -29,6 +29,7 @@ class Experiment(BaseModel):
     model: str
     config: dict = {}
     status: Literal["running", "completed", "failed"] = "running"
+    prompt_version_id: str | None = None
 
 
 class ExperimentSummary(BaseModel):
