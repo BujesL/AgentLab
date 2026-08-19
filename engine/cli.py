@@ -14,6 +14,7 @@ from engine.experiments.repository import (
     get_or_create_agent_version,
 )
 from engine.prompts.repository import get_or_create_prompt_version
+from engine.regression.compare import compare_experiments
 from engine.persistence.repository import (
     apply_schema,
     get_connection,
@@ -57,6 +58,14 @@ def build_parser() -> argparse.ArgumentParser:
     show_parser = trace_sub.add_parser("show")
     show_parser.add_argument("trace_id")
     show_parser.set_defaults(handler=handle_trace_show)
+
+    regression_parser = sub.add_parser("regression")
+    regression_sub = regression_parser.add_subparsers(dest="regression_command", required=True)
+    run_parser = regression_sub.add_parser("run")
+    run_parser.add_argument("baseline_id")
+    run_parser.add_argument("candidate_id")
+    run_parser.add_argument("--threshold", type=float, default=3.0)
+    run_parser.set_defaults(handler=handle_regression_run)
 
     return parser
 
@@ -182,6 +191,29 @@ def handle_trace_show(args: argparse.Namespace) -> int:
         f"      duration={trace.duration_ms:.2f}ms "
         f"tokens={trace.token_usage} cost=${trace.cost}"
     )
+    return 0
+
+
+def handle_regression_run(args: argparse.Namespace) -> int:
+    if "DATABASE_URL" not in os.environ:
+        print("erro: DATABASE_URL não definida")
+        return 1
+
+    conn = get_connection()
+    result = compare_experiments(conn, args.baseline_id, args.candidate_id, args.threshold)
+    conn.close()
+
+    print(f"Baseline  ({args.baseline_id}): {result.baseline_accuracy_pct:.1f}%")
+    print(f"Candidate ({args.candidate_id}): {result.candidate_accuracy_pct:.1f}%")
+    print(f"Delta: {result.accuracy_delta:+.1f}pp (threshold: -{result.threshold_pct}pp)")
+
+    if result.regressed:
+        print(f"RESULTADO: REGRESSION DETECTED ({len(result.regressed_cases)} caso(s))")
+        for case_id in result.regressed_cases:
+            print(f"  - {case_id}: passava no baseline, falha no candidate")
+        return 1
+
+    print("RESULTADO: NO REGRESSION")
     return 0
 
 
