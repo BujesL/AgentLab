@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-evaluation-lab/schemas/quality-gate-result.json",
+  "title": "QualityGateResult",
+  "type": "object",
+  "required": ["experiment_id", "policy_name", "passed", "rule_results"],
+  "additionalProperties": false,
+  "properties": {
+    "experiment_id": { "type": "string" },
+    "policy_name": { "type": "string" },
+    "passed": { "type": "boolean" },
+    "rule_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric", "operator", "expected", "actual", "passed"],
+        "additionalProperties": false,
+        "properties": {
+          "metric": { "type": "string" },
+          "operator": { "type": "string", "enum": [">=", "<=", "=="] },
+          "expected": { "type": "number" },
+          "actual": { "type": ["number", "null"] },
+          "passed": { "type": ["boolean", "null"] }
+        }
+      }
+    }
+  }
+}

@@ -13,7 +13,9 @@ from engine.experiments.repository import (
     get_or_create_agent,
     get_or_create_agent_version,
 )
+from engine.experiments.summary import get_tool_selection_pct, summarize_experiment
 from engine.prompts.repository import get_or_create_prompt_version
+from engine.quality_gates.evaluate import evaluate_quality_gate, load_policy
 from engine.regression.compare import compare_experiments
 from engine.persistence.repository import (
     apply_schema,
@@ -66,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("candidate_id")
     run_parser.add_argument("--threshold", type=float, default=3.0)
     run_parser.set_defaults(handler=handle_regression_run)
+
+    quality_gate_parser = sub.add_parser("quality-gate")
+    quality_gate_parser.add_argument("experiment_id")
+    quality_gate_parser.add_argument("--policy", default="quality-gates/default.json")
+    quality_gate_parser.add_argument("--baseline", help="baseline experiment_id for regression_delta")
+    quality_gate_parser.set_defaults(handler=handle_quality_gate)
 
     return parser
 
@@ -215,6 +223,39 @@ def handle_regression_run(args: argparse.Namespace) -> int:
 
     print("RESULTADO: NO REGRESSION")
     return 0
+
+
+def handle_quality_gate(args: argparse.Namespace) -> int:
+    if "DATABASE_URL" not in os.environ:
+        print("erro: DATABASE_URL não definida")
+        return 1
+
+    conn = get_connection()
+    summary = summarize_experiment(conn, args.experiment_id)
+    tool_selection_pct = get_tool_selection_pct(conn, args.experiment_id)
+
+    regression_delta = None
+    if args.baseline:
+        regression = compare_experiments(conn, args.baseline, args.experiment_id)
+        regression_delta = regression.accuracy_delta
+
+    conn.close()
+
+    policy = load_policy(Path(args.policy))
+    result = evaluate_quality_gate(
+        args.experiment_id, summary, tool_selection_pct, regression_delta, policy
+    )
+
+    print(f"Quality Gate: {result.policy_name}")
+    for rule in result.rule_results:
+        if rule.passed is None:
+            print(f"  SKIP {rule.metric} {rule.operator} {rule.expected} (métrica indisponível)")
+        else:
+            status = "PASS" if rule.passed else "FAIL"
+            print(f"  {status} {rule.metric} {rule.operator} {rule.expected} (atual: {rule.actual:.2f})")
+
+    print(f"RESULTADO: {'PASS' if result.passed else 'FAIL'}")
+    return 0 if result.passed else 1
 
 
 def main(argv: list[str] | None = None) -> int:

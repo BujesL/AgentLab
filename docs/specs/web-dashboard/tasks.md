@@ -57,8 +57,11 @@
 
 ## Observações / débito técnico registrado
 
-- Limiar PASS/FAIL de 100% é placeholder — corrigir quando a spec de
-  Quality Gates existir.
+- ~~Limiar PASS/FAIL de 100% é placeholder~~ **Resolvido** em
+  `docs/specs/quality-gates/` (2026-08-19): o Dashboard agora consome
+  `GET /experiments/:id/quality-gate` (política real `accuracy_pct >= 90`
+  etc.) em vez do limiar hardcoded. Confirmado com dado real: os
+  experimentos de 91.7% que apareciam como FAIL agora mostram PASS.
 - Sem testes automatizados para o Dashboard (nem unitários nem E2E) — a
   validação foi feita rodando de verdade (API + browser/curl) porque
   Next.js/React Testing Library não estavam no escopo desta rodada. Se o

@@ -30,3 +30,24 @@ export async function fetchExperimentSummary(id: string): Promise<ExperimentSumm
   if (!res.ok) throw new Error(`failed to fetch summary for ${id}: ${res.status}`);
   return res.json();
 }
+
+export interface QualityGateResult {
+  experiment_id: string;
+  policy_name: string;
+  passed: boolean;
+  rule_results: Array<{
+    metric: string;
+    operator: string;
+    expected: number;
+    actual: number | null;
+    passed: boolean | null;
+  }>;
+}
+
+export async function fetchQualityGate(id: string): Promise<QualityGateResult> {
+  const res = await fetch(`${API_BASE_URL}/experiments/${id}/quality-gate`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`failed to fetch quality gate for ${id}: ${res.status}`);
+  return res.json();
+}

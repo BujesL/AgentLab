@@ -1,0 +1,8 @@
+{
+  "name": "default",
+  "rules": [
+    { "metric": "accuracy_pct", "operator": ">=", "value": 90 },
+    { "metric": "tool_selection_pct", "operator": ">=", "value": 95 },
+    { "metric": "regression_delta", "operator": ">=", "value": -3 }
+  ]
+}

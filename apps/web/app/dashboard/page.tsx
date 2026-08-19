@@ -1,4 +1,4 @@
-import { fetchExperiments, fetchExperimentSummary, type Experiment } from "@/lib/api";
+import { fetchExperiments, fetchExperimentSummary, fetchQualityGate, type Experiment } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,18 @@ export default async function DashboardPage() {
         experiments.map(async (exp) => {
           try {
             return await fetchExperimentSummary(exp.id);
+          } catch {
+            return null;
+          }
+        })
+      );
+
+  const qualityGates = error
+    ? []
+    : await Promise.all(
+        experiments.map(async (exp) => {
+          try {
+            return await fetchQualityGate(exp.id);
           } catch {
             return null;
           }
@@ -70,7 +82,8 @@ export default async function DashboardPage() {
           )}
           {experiments.map((exp, i) => {
             const summary = summaries[i];
-            const passed = summary ? summary.accuracy_pct === 100 : null;
+            const qualityGate = qualityGates[i];
+            const passed = qualityGate ? qualityGate.passed : null;
             return (
               <div
                 key={exp.id}
