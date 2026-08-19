@@ -25,6 +25,7 @@ from engine.persistence.repository import (
     save_trace,
 )
 from engine.providers.mock import MockProviderAdapter
+from engine.providers.ollama import OllamaProviderAdapter
 from engine.runner import AgentRunner
 from engine.traces import Trace, build_trace
 
@@ -42,8 +43,10 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_parser = sub.add_parser("evaluate")
     evaluate_parser.add_argument("dataset_path")
     evaluate_parser.add_argument(
-        "--scripts", required=True, help="path to a JSON file scripting the mock provider"
+        "--scripts",
+        help="path to a JSON file scripting the mock provider (required when --provider mock)",
     )
+    evaluate_parser.add_argument("--provider", choices=["mock", "ollama"], default="mock")
     evaluate_parser.add_argument("--model", default="mock")
     evaluate_parser.add_argument("--no-persist", action="store_true")
     evaluate_parser.add_argument("--agent", help="agent name; creates an Experiment when set")
@@ -92,8 +95,16 @@ def handle_dataset_validate(args: argparse.Namespace) -> int:
 
 def handle_evaluate(args: argparse.Namespace) -> int:
     dataset = load_dataset(Path(args.dataset_path))
-    scripts = load_scripts(Path(args.scripts))
     registry = build_default_registry()
+
+    if args.provider == "mock" and not args.scripts:
+        print("erro: --scripts é obrigatório com --provider mock")
+        return 1
+    scripts = load_scripts(Path(args.scripts)) if args.scripts else {}
+
+    system_prompt = None
+    if args.prompt_file:
+        system_prompt = Path(args.prompt_file).read_text(encoding="utf-8")
 
     conn = None
     if not args.no_persist:
@@ -110,9 +121,8 @@ def handle_evaluate(args: argparse.Namespace) -> int:
 
         prompt_version_id = None
         if args.prompt_file:
-            content = Path(args.prompt_file).read_text(encoding="utf-8")
             prompt_version = get_or_create_prompt_version(
-                conn, name=Path(args.prompt_file).stem, content=content
+                conn, name=Path(args.prompt_file).stem, content=system_prompt
             )
             prompt_version_id = prompt_version.id
             print(f"prompt version: {prompt_version.name}@{prompt_version.version}")
@@ -128,11 +138,14 @@ def handle_evaluate(args: argparse.Namespace) -> int:
     entries: list[tuple[str, EvaluationResult, Trace]] = []
 
     for case in dataset.cases:
-        if case.id not in scripts:
-            print(f"AVISO: sem script para {case.id}, pulando")
-            continue
+        if args.provider == "mock":
+            if case.id not in scripts:
+                print(f"AVISO: sem script para {case.id}, pulando")
+                continue
+            provider = MockProviderAdapter(scripts[case.id])
+        else:
+            provider = OllamaProviderAdapter(model=args.model, system_prompt=system_prompt)
 
-        provider = MockProviderAdapter(scripts[case.id])
         run_result = AgentRunner().run(case, provider, registry)
         trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
         evaluation = evaluate_case(case, run_result)
