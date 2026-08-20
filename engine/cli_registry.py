@@ -57,9 +57,11 @@ def build_default_registry() -> ToolRegistry:
         ToolSpec(
             name="update_ticket",
             description=(
-                "Change fields on a single existing ticket. Requires human approval before "
-                "it takes effect, so it is safe to call even when unsure. Do not call this "
-                "if the user has not given you a ticket id — ask for it in plain text instead."
+                "Change fields on a single existing ticket. Always requires human approval "
+                "before it takes effect, so it is safe to call even with incomplete or "
+                "questionable values (e.g. no ticket id yet, or a status that looks invalid) "
+                "— the approval step is the real safety net, not you. Prefer attempting the "
+                "call over asking a clarifying question first for this specific tool."
             ),
             input_schema={
                 "type": "object",

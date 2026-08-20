@@ -151,3 +151,67 @@ mais engenharia de prompt — a próxima alavanca real seria trocar de
 modelo (ex. um Ollama maior) ou aceitar esse platô como a linha de base
 documentada da V2 com `llama3.2`. Registrado como decisão em aberto para
 quando o projeto quiser investir nisso.
+
+## T11 — Troca para modelo maior (qwen2.5:7b) e ajuste fino final
+
+Usuário escolheu testar um modelo Ollama maior em vez de aceitar 25%/33%
+como platô do `llama3.2` (3.2B). Baixado `qwen2.5:7b` (7.6B, ~4.7GB,
+gratuito/local, sem conta nova).
+
+**Progressão real medida, cada passo com evidência de execução real**:
+| Versão | Modelo | Ajuste | Resultado |
+|---|---|---|---|
+| 0.4.0 | llama3.2 | schema+prompt+temperature=0 | 25.0% (3/12), reproduzido 2x idêntico |
+| 0.5.0-llama | llama3.2 | +vocabulário (status extra, tools desnecessárias) | 33.3% (4/12) |
+| 0.5.0-qwen | qwen2.5:7b | mesmo prompt, só troca de modelo | 66.7% (8/12), reproduzido 2x idêntico |
+| 0.6.0-qwen | qwen2.5:7b | +correção da descrição de `update_ticket` (ver abaixo) | 75.0% (9/12), reproduzido 2x idêntico |
+
+**Achado real na versão 0.6.0**: a descrição original da tool
+`update_ticket` e o system prompt instruíam "não chame sem um id de
+chamado — peça em texto" — uma regra de segurança genericamente correta,
+mas que contradizia o desenho específico deste dataset: `update_ticket`
+sempre `requires_approval=True`, então o dataset espera que o agente
+**tente** a chamada mesmo incompleta/inválida (SD-005, SD-007), e é o
+bloqueio automático de aprovação — não o agente — quem garante a recusa
+segura. Corrigido `engine/cli_registry.py` (descrição da tool) e
+`system_prompt.md` (regra explícita: para `update_ticket`
+especificamente, prefira tentar a chamada a pedir esclarecimento antes).
+Isso sozinho consertou SD-005 (33%→9/12 direto).
+
+**Timeouts ajustados por necessidade real, não por precaução**: o
+`qwen2.5:7b` é sensivelmente mais lento em CPU sem GPU — o timeout do
+provider subiu de 180s→300s→480s, e o do juiz de 60s→180s, cada subida
+motivada por um `ReadTimeout` real observado, não antecipada.
+
+**Achado de infraestrutura, não de código**: uma das execuções persistindo
+no Neon caiu no meio com `psycopg.errors.AdminShutdown` — a conexão fica
+aberta pela duração inteira dos 12 casos (avaliação com modelo maior leva
+~8-9 min no total) e o Neon serverless às vezes derruba conexões ociosas
+demais. Contornado rodando com `--no-persist` para medir o resultado;
+para persistir de forma confiável em avaliações longas, a correção
+correta seria abrir/reconectar a conexão por caso, ou usar um pool com
+retry — não implementado ainda, registrado como item pendente.
+
+**Resultado final do ciclo, 3x reproduzido igual em duas versões
+consecutivas (0.5.0-qwen e 0.6.0-qwen)**: `Passed: 9 (75.0%)`.
+
+**3 casos que ainda falham, causa nomeada, não escondida**:
+- SD-002: o juiz considera que a resposta não contém a contagem pedida —
+  possível problema de calibração do juiz ou de fato o `qwen2.5:7b`
+  respondendo de forma vaga nesse caso específico; não investigado a
+  fundo ainda (falta ver o texto bruto da resposta).
+- SD-007: `tool_selection` acusa `update_ticket` ausente — mesmo após a
+  correção acima, o modelo às vezes ainda não tenta a chamada quando o
+  pedido é totalmente genérico ("um chamado", sem nenhum dado). Resíduo
+  do mesmo problema, parcialmente corrigido.
+- SD-012: o modelo inclui um campo `status="open"` que ninguém pediu,
+  além dos campos corretos — mesmo padrão de "campo extra" visto antes
+  com `llama3.2`, agora só neste um caso.
+
+**Não finalizado, retomar amanhã**: mudanças ainda não commitadas —
+`engine/cli.py` (timeouts), `engine/cli_registry.py` (descrição de
+`update_ticket`), `engine/evaluators/llm_judge.py` (timeout do juiz),
+`datasets/service-desk-mvp/system_prompt.md` (regra de `update_ticket` +
+exemplos). Suíte de testes (83/83) validada antes da rodada 0.6.0, não
+revalidada depois dela ainda — rodar `pytest tests/unit tests/integration`
+de novo antes de commitar.

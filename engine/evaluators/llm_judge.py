@@ -48,7 +48,7 @@ def evaluate_answer_llm_judge(
     run_result: RunResult,
     model: str,
     base_url: str = "http://localhost:11434",
-    timeout: int = 60,
+    timeout: int = 180,
 ) -> EvalScore:
     actual_text = (run_result.final_answer or {}).get("text", "")
     prompt = JUDGE_PROMPT_TEMPLATE.format(

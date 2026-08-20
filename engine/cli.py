@@ -151,7 +151,7 @@ def handle_evaluate(args: argparse.Namespace) -> int:
             provider = MockProviderAdapter(scripts[case.id])
         else:
             provider = OllamaProviderAdapter(
-                model=args.model, system_prompt=system_prompt, timeout=180
+                model=args.model, system_prompt=system_prompt, timeout=480
             )
 
         run_result = AgentRunner().run(case, provider, registry)
