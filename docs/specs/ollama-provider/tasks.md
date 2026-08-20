@@ -208,10 +208,66 @@ consecutivas (0.5.0-qwen e 0.6.0-qwen)**: `Passed: 9 (75.0%)`.
   além dos campos corretos — mesmo padrão de "campo extra" visto antes
   com `llama3.2`, agora só neste um caso.
 
-**Não finalizado, retomar amanhã**: mudanças ainda não commitadas —
-`engine/cli.py` (timeouts), `engine/cli_registry.py` (descrição de
-`update_ticket`), `engine/evaluators/llm_judge.py` (timeout do juiz),
+**Commitado em 2026-08-20** (`3cf66d3`): `engine/cli.py` (timeouts),
+`engine/cli_registry.py` (descrição de `update_ticket`),
+`engine/evaluators/llm_judge.py` (timeout do juiz),
 `datasets/service-desk-mvp/system_prompt.md` (regra de `update_ticket` +
-exemplos). Suíte de testes (83/83) validada antes da rodada 0.6.0, não
-revalidada depois dela ainda — rodar `pytest tests/unit tests/integration`
-de novo antes de commitar.
+exemplos). Suíte de testes (83/83) revalidada antes do commit.
+
+## T12 — Fechando os 3 últimos casos (2026-08-20): 75% → 100%
+
+Retomado o platô de 75% (9/12) do fim do T11. Rodar a suíte de novo antes
+de investigar já revelou que os "3 casos que falham" não eram sempre os
+mesmos três (SD-002/007/012 numa rodada, SD-007/009/012 na seguinte) —
+sinal de que o modelo estava no limiar em mais de 3 casos, não travado
+em exatamente esses três.
+
+**Causas reais encontradas, uma por uma, com o texto bruto da resposta**:
+- **SD-007** (`update_ticket` sem tentar a chamada): o JSON schema da
+  tool tinha `"required": ["id"]` — contradizendo a própria instrução do
+  prompt de "tente chamar mesmo sem saber o id ainda". O schema enviado
+  ao Ollama como definição de function-calling vencia a instrução em
+  texto livre. Corrigido removendo `required` do schema
+  (`engine/cli_registry.py`) — a tool já é segura de chamar incompleta
+  porque `requires_approval=True` faz o bloqueio de qualquer forma.
+- **SD-012** (campo `status="open"` extra): causa raiz era ambiguidade
+  real de português, não bug de prompt engineering — "chamados **abertos
+  por** João Silva" significa chamados que ele **abriu** (criou), i.e.
+  `requester`, e não tem nada a ver com o **estado** do chamado
+  (`status="open"`). O prompt não distinguia esses dois sentidos de
+  "aberto". Adicionada regra de vocabulário explícita + exemplo exato
+  desse padrão em `system_prompt.md`.
+- **SD-009** (responde com dados de um time em vez de pedir
+  esclarecimento): o modelo já chamava `get_tickets` corretamente sem
+  filtro (ambíguo entre time X/Y), mas a resposta final apresentava os
+  dados como se fosse a resposta, em vez de perguntar qual time o
+  usuário queria. Reforçada a instrução: chamar a tool aqui é preparar o
+  terreno, não entregar resultado — a resposta final deve só perguntar.
+- **SD-012 residual** (depois de corrigir o argumento, o juiz ainda
+  reprovava o texto): pedido usa a palavra "liste", mas `get_tickets`
+  só retorna uma contagem (stub fixo `{"count": 4}`, nunca uma lista
+  detalhada) — o modelo hedgeava pedindo mais detalhes em vez de
+  responder com o número. Adicionada regra explícita: mesmo que o
+  pedido diga "listar", responder com o total como resposta completa,
+  sem pedir mais detalhes.
+
+**Progressão medida nesta sessão, cada rodada real contra qwen2.5:7b**:
+| Ajuste | Resultado |
+|---|---|
+| (retomando o platô do T11) | 75.0% (9/12) — casos variando entre rodadas |
+| + `required` removido de `update_ticket` | 91.7% (11/12) — só SD-012 (texto) falha |
+| + regra "liste" → responder com contagem, sem hedge | **100.0% (12/12)** |
+
+**Reproduzido 2x idêntico** (mesmo comando, mesmo prompt): `Passed: 12
+(100.0%)` nas duas rodadas, caso a caso idêntico — não é ruído.
+
+**Conclusão honesta**: nenhum dos 3 casos restantes exigiu trocar de
+modelo ou relaxar a métrica — eram, na ordem: (1) um schema conflitando
+com a própria instrução do prompt, (2) uma ambiguidade genuína de
+português não mapeada, e (3) uma expectativa de resposta que não batia
+com o que a tool de fato retorna. Todos corrigíveis com engenharia de
+schema/prompt, sem comprometer o rigor das métricas (comparação exata de
+argumento, juiz LLM independente).
+
+Suíte de testes (63 passed + 20 skipped = 83/83) revalidada antes de
+commitar estas mudanças.

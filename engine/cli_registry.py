@@ -70,7 +70,6 @@ def build_default_registry() -> ToolRegistry:
                     "status": {"type": "string", "description": "New status value."},
                     "priority": {"type": "string", "description": "New priority value."},
                 },
-                "required": ["id"],
                 "additionalProperties": False,
             },
             risk_level="medium",
