@@ -1,4 +1,5 @@
 from engine.evaluators.answer_accuracy import evaluate_answer_accuracy
+from engine.evaluators.groundedness import evaluate_groundedness
 from engine.evaluators.llm_judge import evaluate_answer_llm_judge
 from engine.evaluators.models import EvaluationResult
 from engine.evaluators.tool_arguments import evaluate_tool_arguments
@@ -8,7 +9,10 @@ from engine.runner import RunResult
 
 
 def evaluate_case(
-    case: EvaluationCase, run_result: RunResult, llm_judge_model: str | None = None
+    case: EvaluationCase,
+    run_result: RunResult,
+    llm_judge_model: str | None = None,
+    groundedness_model: str | None = None,
 ) -> EvaluationResult:
     evaluations = [
         evaluate_tool_selection(case, run_result),
@@ -22,6 +26,14 @@ def evaluate_case(
         evaluations.append(evaluate_answer_llm_judge(case, run_result, model=llm_judge_model))
     else:
         evaluations.append(evaluate_answer_accuracy(case, run_result))
+
+    if groundedness_model:
+        # Ortogonal a tool_selection/tool_arguments/answer_accuracy: mede fundamentação
+        # no contexto, não corretude de tool-calling — por isso soma em vez de substituir.
+        # Ver docs/specs/groundedness/spec.md.
+        evaluations.append(
+            evaluate_groundedness(case, run_result, model=groundedness_model)
+        )
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)

@@ -165,3 +165,15 @@ def test_evaluate_case_fails_with_non_empty_reason_when_any_evaluator_fails():
     assert not evaluation.passed
     assert evaluation.failure_reason
     assert "missing tools" in evaluation.failure_reason
+
+
+def test_evaluate_case_adds_groundedness_score_without_context_no_network_call():
+    # case.context is None, so evaluate_groundedness short-circuits without an HTTP
+    # call — this verifies the aggregate wiring, not the LLM judge call itself.
+    case = make_case(expected_behavior="answer", expected_answer={"count": 4})
+    result = make_result(final_answer={"count": 4})
+
+    evaluation = evaluate_case(case, result, groundedness_model="whatever")
+
+    assert evaluation.passed
+    assert evaluation.scores["groundedness"] == 1.0

@@ -60,3 +60,25 @@ validar o pipeline ponta a ponta antes de escalar para 100.
 MVP → V1 (API/dashboard) → V1.5 (prompt versioning/regression/quality gates em CI) →
 V2 (Groundedness/RAG/LLM-as-Judge) → V3 (multi-agent/segurança avançada) → V4
 (deployment cloud/self-hosted).
+
+## Ideia registrada, não planejada (V3/V4 ou posterior)
+
+**Chat na web para disparar avaliações em linguagem natural**: em vez de só
+visualizar resultados já rodados, o dashboard teria uma interface de chat onde o
+usuário pede em texto livre (ex.: "testa esse agente novo com o dataset de service
+desk") e o sistema traduz isso numa chamada à API (`apps/api`) que dispara o
+Evaluation Engine, depois resume o resultado de volta em texto.
+
+Viável tecnicamente porque a infraestrutura já existente cobre a maior parte:
+API HTTP, Evaluation Engine, conceito de Tool/Provider Adapter. Faltaria (1) um
+endpoint assíncrono "rode a avaliação X" e (2) a camada de chat que interpreta o
+pedido e resume a resposta.
+
+Ressalva importante, coerente com `docs/product/vision.md` ("não usa LLM como
+juiz de tudo — determinismo tem prioridade"): esse chat seria uma camada de
+conveniência/UX por cima do motor determinístico, nunca um substituto das
+avaliações objetivas (tool_selection, tool_argument_accuracy, etc.) por "perguntar
+pra IA se passou".
+
+Sem data nem fase definida — registrado aqui só para não perder a ideia quando o
+roadmap V3/V4 for detalhado.

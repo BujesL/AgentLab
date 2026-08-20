@@ -62,6 +62,14 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument(
         "--judge-model", help="Ollama model for --llm-judge (defaults to --model)"
     )
+    evaluate_parser.add_argument(
+        "--groundedness",
+        action="store_true",
+        help="also score groundedness (needs case.context) via LLM-as-a-Judge",
+    )
+    evaluate_parser.add_argument(
+        "--groundedness-model", help="Ollama model for --groundedness (defaults to --model)"
+    )
     evaluate_parser.set_defaults(handler=handle_evaluate)
 
     trace_parser = sub.add_parser("trace")
@@ -157,7 +165,15 @@ def handle_evaluate(args: argparse.Namespace) -> int:
         run_result = AgentRunner().run(case, provider, registry)
         trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
         judge_model = (args.judge_model or args.model) if args.llm_judge else None
-        evaluation = evaluate_case(case, run_result, llm_judge_model=judge_model)
+        groundedness_model = (
+            (args.groundedness_model or args.model) if args.groundedness else None
+        )
+        evaluation = evaluate_case(
+            case,
+            run_result,
+            llm_judge_model=judge_model,
+            groundedness_model=groundedness_model,
+        )
 
         if conn is not None:
             save_trace(conn, trace)

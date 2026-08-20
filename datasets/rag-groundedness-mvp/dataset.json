@@ -1,0 +1,33 @@
+{
+  "id": "rag-groundedness-mvp",
+  "name": "RAG Groundedness MVP",
+  "version": "0.1.0",
+  "description": "Small synthetic question+context+answer suite to validate the groundedness evaluator in isolation, without a real retrieval pipeline (see docs/specs/groundedness/spec.md).",
+  "cases": [
+    {
+      "id": "RAG-001",
+      "input": "Contexto:\n- A política de reembolso da empresa permite devolução em até 30 dias após a compra, com nota fiscal.\n\nPergunta: em quantos dias posso pedir reembolso?",
+      "context": [
+        "A política de reembolso da empresa permite devolução em até 30 dias após a compra, com nota fiscal."
+      ],
+      "expected_behavior": "answer",
+      "expected_answer": {"days": 30}
+    },
+    {
+      "id": "RAG-002",
+      "input": "Contexto:\n- O plano Pro custa R$ 99/mês e inclui suporte prioritário.\n\nPergunta: o plano Pro dá acesso a relatórios avançados?",
+      "context": [
+        "O plano Pro custa R$ 99/mês e inclui suporte prioritário."
+      ],
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "RAG-003",
+      "input": "Contexto:\n- O horário de atendimento do suporte é de segunda a sexta, das 9h às 18h.\n\nPergunta: o suporte atende aos finais de semana?",
+      "context": [
+        "O horário de atendimento do suporte é de segunda a sexta, das 9h às 18h."
+      ],
+      "expected_behavior": "answer"
+    }
+  ]
+}

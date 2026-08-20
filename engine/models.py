@@ -13,6 +13,7 @@ class EvaluationCase(BaseModel):
     expected_answer: dict | None = None
     expected_behavior: Literal["answer", "refuse", "clarify"] = "answer"
     requires_approval: bool = False
+    context: list[str] | None = None
 
     @model_validator(mode="after")
     def refuse_has_no_expected_answer(self) -> "EvaluationCase":
