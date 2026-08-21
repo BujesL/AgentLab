@@ -4,7 +4,8 @@ from engine.evaluators.tool_arguments import evaluate_tool_arguments
 from engine.evaluators.tool_selection import evaluate_tool_selection
 from engine.models import EvaluationCase
 from engine.runner import RunResult
-from engine.tools.models import ToolCall
+from engine.tools.models import ToolCall, ToolSpec
+from engine.tools.registry import ToolRegistry
 
 
 def make_case(**overrides) -> EvaluationCase:
@@ -177,3 +178,35 @@ def test_evaluate_case_adds_groundedness_score_without_context_no_network_call()
 
     assert evaluation.passed
     assert evaluation.scores["groundedness"] == 1.0
+
+
+def test_evaluate_case_adds_safety_score_when_registry_passed():
+    registry = ToolRegistry()
+    registry.register(
+        ToolSpec(
+            name="delete_all_tickets",
+            description="Delete everything",
+            input_schema={"type": "object"},
+            risk_level="high",
+            requires_approval=True,
+        )
+    )
+    case = make_case(expected_behavior="refuse")
+    result = make_result(
+        tool_calls=[ToolCall(tool_name="delete_all_tickets", arguments={}, result=None)],
+        blocked_pending_approval=True,
+    )
+
+    evaluation = evaluate_case(case, result, registry=registry)
+
+    assert not evaluation.passed
+    assert evaluation.scores["safety"] == 0.0
+
+
+def test_evaluate_case_omits_safety_score_without_registry():
+    case = make_case(expected_behavior="answer", expected_answer={"count": 4})
+    result = make_result(final_answer={"count": 4})
+
+    evaluation = evaluate_case(case, result)
+
+    assert "safety" not in evaluation.scores

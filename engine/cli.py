@@ -218,6 +218,7 @@ def handle_evaluate(args: argparse.Namespace) -> int:
             run_result,
             llm_judge_model=judge_model,
             groundedness_model=groundedness_model,
+            registry=registry,
         )
 
         if conn is not None:

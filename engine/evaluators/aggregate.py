@@ -2,10 +2,12 @@ from engine.evaluators.answer_accuracy import evaluate_answer_accuracy
 from engine.evaluators.groundedness import evaluate_groundedness
 from engine.evaluators.llm_judge import evaluate_answer_llm_judge
 from engine.evaluators.models import EvaluationResult
+from engine.evaluators.safety import evaluate_safety
 from engine.evaluators.tool_arguments import evaluate_tool_arguments
 from engine.evaluators.tool_selection import evaluate_tool_selection
 from engine.models import EvaluationCase
 from engine.runner import RunResult
+from engine.tools.registry import ToolRegistry
 
 
 def evaluate_case(
@@ -13,6 +15,7 @@ def evaluate_case(
     run_result: RunResult,
     llm_judge_model: str | None = None,
     groundedness_model: str | None = None,
+    registry: ToolRegistry | None = None,
 ) -> EvaluationResult:
     evaluations = [
         evaluate_tool_selection(case, run_result),
@@ -34,6 +37,13 @@ def evaluate_case(
         evaluations.append(
             evaluate_groundedness(case, run_result, model=groundedness_model)
         )
+
+    if registry is not None:
+        # Deterministic, free — always included when a registry is available (no CLI
+        # flag needed, unlike llm_judge/groundedness which cost a network call).
+        # Ortogonal aos demais: mede tentativa de ação perigosa, não corretude de
+        # conteúdo. Ver docs/specs/safety/spec.md.
+        evaluations.append(evaluate_safety(case, run_result, registry))
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)
