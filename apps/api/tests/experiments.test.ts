@@ -58,6 +58,7 @@ describeIfDb("GET /experiments and /experiments/:id/summary", () => {
     const body = response.json();
     expect(body.total_cases).toBe(0);
     expect(body.accuracy_pct).toBe(0);
+    expect(body.metric_scores).toEqual([]);
 
     await pool.query("DELETE FROM experiment WHERE id = $1", [experimentId]);
   });
@@ -86,6 +87,47 @@ describeIfDb("GET /experiments and /experiments/:id/summary", () => {
     expect(body.total_cases).toBe(2);
     expect(body.passed).toBe(1);
     expect(body.accuracy_pct).toBe(50);
+
+    await pool.query("DELETE FROM evaluation_result WHERE experiment_id = $1", [experimentId]);
+    await pool.query("DELETE FROM experiment WHERE id = $1", [experimentId]);
+  });
+
+  it("breaks accuracy down per metric key found in scores, including V2 metrics", async () => {
+    const experimentId = randomUUID();
+    await pool.query(
+      "INSERT INTO experiment (id, agent_version_id, dataset_id, model) VALUES ($1, $2, $3, $4)",
+      [experimentId, versionId, "rag-groundedness-mvp", "mock"]
+    );
+    await pool.query(
+      "INSERT INTO evaluation_result (case_id, experiment_id, scores, passed) VALUES ($1, $2, $3, $4)",
+      [
+        "RAG-001",
+        experimentId,
+        JSON.stringify({ tool_selection: 1.0, groundedness: 1.0 }),
+        true,
+      ]
+    );
+    await pool.query(
+      "INSERT INTO evaluation_result (case_id, experiment_id, scores, passed) VALUES ($1, $2, $3, $4)",
+      [
+        "RAG-002",
+        experimentId,
+        JSON.stringify({ tool_selection: 1.0, groundedness: 0.0 }),
+        false,
+      ]
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/experiments/${experimentId}/summary`,
+    });
+
+    const body = response.json();
+    const byMetric = Object.fromEntries(
+      body.metric_scores.map((m: { metric: string; pct: number }) => [m.metric, m.pct])
+    );
+    expect(byMetric.tool_selection).toBe(100);
+    expect(byMetric.groundedness).toBe(50);
 
     await pool.query("DELETE FROM evaluation_result WHERE experiment_id = $1", [experimentId]);
     await pool.query("DELETE FROM experiment WHERE id = $1", [experimentId]);

@@ -24,6 +24,17 @@ export async function experimentsRoutes(app: FastifyInstance, opts: { pool: Pool
         "FROM trace WHERE experiment_id = $1",
       [id]
     );
+    // Generic per-metric breakdown: whatever keys exist in evaluation_result.scores
+    // (tool_selection, answer_accuracy, answer_accuracy_llm_judge, groundedness, ...) —
+    // not hardcoded, so a new evaluator metric shows up here with no API change.
+    const metricScoresResult = await pool.query(
+      "SELECT kv.key AS metric, AVG(kv.value::float) * 100 AS pct " +
+        "FROM evaluation_result, jsonb_each_text(scores) AS kv " +
+        "WHERE experiment_id = $1 " +
+        "GROUP BY kv.key " +
+        "ORDER BY kv.key",
+      [id]
+    );
 
     const total = Number(countsResult.rows[0].total);
     const passed = Number(countsResult.rows[0].passed);
@@ -32,6 +43,10 @@ export async function experimentsRoutes(app: FastifyInstance, opts: { pool: Pool
       ? Number(avgResult.rows[0].avg_latency_ms)
       : 0;
     const avgCost = avgResult.rows[0].avg_cost ? Number(avgResult.rows[0].avg_cost) : 0;
+    const metricScores = metricScoresResult.rows.map((row) => ({
+      metric: row.metric as string,
+      pct: Number(row.pct),
+    }));
 
     return {
       experiment_id: id,
@@ -40,6 +55,7 @@ export async function experimentsRoutes(app: FastifyInstance, opts: { pool: Pool
       accuracy_pct: accuracyPct,
       avg_latency_ms: avgLatencyMs,
       avg_cost: avgCost,
+      metric_scores: metricScores,
     };
   });
 }

@@ -13,6 +13,16 @@ export default async function ComparePage({
   const summaryA = a ? await fetchExperimentSummary(a).catch(() => null) : null;
   const summaryB = b ? await fetchExperimentSummary(b).catch(() => null) : null;
 
+  // Union of every metric key reported by either side — new evaluator metrics
+  // (groundedness, answer_accuracy_llm_judge, ...) show up automatically, no
+  // hardcoded list to keep in sync.
+  const metricNames = Array.from(
+    new Set([
+      ...(summaryA?.metric_scores.map((m) => m.metric) ?? []),
+      ...(summaryB?.metric_scores.map((m) => m.metric) ?? []),
+    ])
+  ).sort();
+
   return (
     <main className="min-h-screen bg-[#0b0b0d] px-6 py-10 text-white">
       <div className="mx-auto max-w-3xl">
@@ -55,6 +65,18 @@ export default async function ComparePage({
               a={summaryA ? `$${summaryA.avg_cost.toFixed(4)}` : undefined}
               b={summaryB ? `$${summaryB.avg_cost.toFixed(4)}` : undefined}
             />
+            {metricNames.map((metric) => {
+              const scoreA = summaryA?.metric_scores.find((m) => m.metric === metric)?.pct;
+              const scoreB = summaryB?.metric_scores.find((m) => m.metric === metric)?.pct;
+              return (
+                <Row
+                  key={metric}
+                  label={metric}
+                  a={scoreA !== undefined ? `${scoreA.toFixed(1)}%` : undefined}
+                  b={scoreB !== undefined ? `${scoreB.toFixed(1)}%` : undefined}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>

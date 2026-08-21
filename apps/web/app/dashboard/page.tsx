@@ -52,6 +52,24 @@ export default async function DashboardPage() {
       ? validSummaries.reduce((sum, s) => sum + s.avg_latency_ms, 0) / validSummaries.length
       : 0;
 
+  // V2 metrics (LLM-as-a-Judge, Groundedness) only show up when an experiment
+  // actually opted into them (evaluate --llm-judge / --groundedness) — average
+  // only over the experiments that reported each metric, not all of them.
+  const v2MetricNames = ["answer_accuracy_llm_judge", "groundedness"];
+  const v2MetricLabels: Record<string, string> = {
+    answer_accuracy_llm_judge: "LLM Judge",
+    groundedness: "Groundedness",
+  };
+  const v2Aggregates = v2MetricNames
+    .map((metric) => {
+      const values = validSummaries
+        .map((s) => s.metric_scores.find((m) => m.metric === metric)?.pct)
+        .filter((v): v is number => v !== undefined);
+      if (values.length === 0) return null;
+      return { metric, pct: values.reduce((a, b) => a + b, 0) / values.length };
+    })
+    .filter((v): v is { metric: string; pct: number } => v !== null);
+
   return (
     <main className="min-h-screen bg-[#0b0b0d] px-6 py-10 text-white">
       <div className="mx-auto max-w-4xl">
@@ -72,6 +90,18 @@ export default async function DashboardPage() {
           <Stat label="Avg Latency" value={`${avgLatency.toFixed(2)}ms`} />
         </div>
 
+        {v2Aggregates.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-5">
+            {v2Aggregates.map((agg) => (
+              <Stat
+                key={agg.metric}
+                label={v2MetricLabels[agg.metric] ?? agg.metric}
+                value={`${agg.pct.toFixed(1)}%`}
+              />
+            ))}
+          </div>
+        )}
+
         <h2 className="mt-10 text-lg font-medium">Recent Experiments</h2>
         <div className="mt-4 divide-y divide-white/10 rounded-lg border border-white/10">
           {experiments.length === 0 && !error && (
@@ -84,31 +114,45 @@ export default async function DashboardPage() {
             const summary = summaries[i];
             const qualityGate = qualityGates[i];
             const passed = qualityGate ? qualityGate.passed : null;
+            const v2Scores = (summary?.metric_scores ?? []).filter((m) =>
+              v2MetricNames.includes(m.metric)
+            );
             return (
-              <div
-                key={exp.id}
-                className="flex items-center justify-between px-4 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium">{exp.dataset_id}</p>
-                  <p className="text-white/40">{exp.model}</p>
+              <div key={exp.id} className="px-4 py-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{exp.dataset_id}</p>
+                    <p className="text-white/40">{exp.model}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-white/70">
+                      {summary ? `${summary.accuracy_pct.toFixed(1)}%` : "—"}
+                    </span>
+                    <span
+                      className={
+                        passed === null
+                          ? "text-white/40"
+                          : passed
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                      }
+                    >
+                      {passed === null ? "?" : passed ? "PASS" : "FAIL"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-white/70">
-                    {summary ? `${summary.accuracy_pct.toFixed(1)}%` : "—"}
-                  </span>
-                  <span
-                    className={
-                      passed === null
-                        ? "text-white/40"
-                        : passed
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                    }
-                  >
-                    {passed === null ? "?" : passed ? "PASS" : "FAIL"}
-                  </span>
-                </div>
+                {v2Scores.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {v2Scores.map((m) => (
+                      <span
+                        key={m.metric}
+                        className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-white/50"
+                      >
+                        {v2MetricLabels[m.metric] ?? m.metric}: {m.pct.toFixed(1)}%
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

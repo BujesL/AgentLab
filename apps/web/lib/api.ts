@@ -8,6 +8,11 @@ export interface Experiment {
   status: string;
 }
 
+export interface MetricScore {
+  metric: string;
+  pct: number;
+}
+
 export interface ExperimentSummary {
   experiment_id: string;
   total_cases: number;
@@ -15,6 +20,7 @@ export interface ExperimentSummary {
   accuracy_pct: number;
   avg_latency_ms: number;
   avg_cost: number;
+  metric_scores: MetricScore[];
 }
 
 export async function fetchExperiments(): Promise<Experiment[]> {

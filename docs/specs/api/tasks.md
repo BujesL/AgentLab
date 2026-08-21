@@ -37,6 +37,53 @@
         Vitest é frágil/lento para rodar em toda suíte; validação manual
         fica registrada como item aberto, ver observação abaixo).
 
+## T11 — Estender /experiments/:id/summary com métricas do V2 (2026-08-21)
+
+Confirmado que o V1 (API+Dashboard) e o V1.5 (Quality Gates/Prompt
+Versioning/Regression/CI) já estavam completos desde 2026-08-19 — antes das
+sessões de V2 (LLM-as-a-Judge/Groundedness/RAG). O Dashboard só mostrava
+`accuracy_pct` (agregado por AND de todos os avaliadores), sem visibilidade
+individual das métricas novas.
+
+**Mudança**: `GET /experiments/:id/summary` ganha `metric_scores: {metric,
+pct}[]`, calculado genericamente via `jsonb_each_text(scores)` sobre todos os
+`evaluation_result` do experimento — nenhuma métrica é hardcoded, então
+qualquer avaliador futuro (`scores` com uma chave nova) aparece
+automaticamente sem mudança de API.
+
+- `apps/api/src/routes/experiments.ts`: query adicional agregando por
+  `kv.key`.
+- `apps/web/lib/api.ts`: `ExperimentSummary.metric_scores`.
+- `apps/web/app/dashboard/page.tsx`: cards agregados "LLM Judge"/
+  "Groundedness" (só aparecem quando ao menos um experimento reportou a
+  métrica) + badges por linha de experimento.
+- `apps/web/app/compare/page.tsx`: linhas de métrica dinâmicas — união das
+  chaves de `metric_scores` de A e B, não uma lista fixa.
+
+**Bug real encontrado durante a verificação manual (não de código, de
+processo de dev)**: `npm run dev` do `apps/api` não usa `--watch`; um
+processo antigo (código anterior à mudança) continuava vivo na porta 3001
+depois de reiniciar o servidor com `&`, porque `npm run dev &` só mata o
+wrapper `npm`, não o processo `node` filho — o novo processo falhava em
+silêncio com `EADDRINUSE` no log, e as requisições continuavam sendo
+servidas pelo processo velho sem `metric_scores`. Diagnosticado lendo o log
+do servidor, corrigido matando o processo pela porta (`Get-NetTCPConnection
+-LocalPort 3001 | Stop-Process`) antes de reiniciar.
+
+**Validado com dado real**: persistido um experiment real (`agentlab
+evaluate datasets/rag-groundedness-mvp/dataset.json --agent
+rag-groundedness --llm-judge --groundedness`, sem `--no-persist`),
+confirmado no dashboard e no `/compare` mostrando `LLM Judge: 100.0%` e
+`Groundedness: 100.0%` para esse experimento, e `groundedness` ausente (não
+zero, ausente) nos experimentos antigos que nunca rodaram com essa flag —
+comportamento correto do "average only over experiments that reported it".
+
+Testes: `apps/api/tests/experiments.test.ts` ganhou um teste cobrindo
+`metric_scores` com múltiplas chaves (7/7 passing). `npm run build` do
+`apps/web` limpo (TypeScript confere os novos tipos). Suíte Python
+inalterada (75 passed + 20 skipped — este incremento não tocou o Engine
+Python).
+
 ## Observação: cobertura incompleta em POST /evaluate
 
 `POST /evaluate` não tem teste automatizado (unit nem integração) — só as
