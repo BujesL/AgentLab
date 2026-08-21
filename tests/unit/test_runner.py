@@ -117,3 +117,71 @@ def test_max_iterations_exceeded_raises():
 
     with pytest.raises(RuntimeError):
         runner.run(case, provider, make_registry())
+
+
+# --- Retrieval (--rag) --------------------------------------------------------
+
+
+class _RecordingProvider:
+    """Fake provider that records the `input` string it was called with, so tests
+    can assert on the effective prompt AgentRunner built (unlike MockProviderAdapter,
+    which ignores `input` entirely)."""
+
+    def __init__(self, script):
+        self._script = list(script)
+        self.received_inputs: list[str] = []
+
+    def step(self, input, tools, history):
+        self.received_inputs.append(input)
+        return self._script.pop(0)
+
+
+class _FakeRetriever:
+    def __init__(self, passages: list[str]) -> None:
+        self.passages = passages
+        self.queries: list[str] = []
+
+    def retrieve(self, query: str, k: int = 3) -> list[str]:
+        self.queries.append(query)
+        return self.passages
+
+
+def test_retriever_injects_context_into_effective_input():
+    case = EvaluationCase(id="RAG-001", input="Em quantos dias posso pedir reembolso?")
+    provider = _RecordingProvider([FinalAnswer(answer={"text": "30 dias"})])
+    retriever = _FakeRetriever(["A política de reembolso permite devolução em 30 dias."])
+    runner = AgentRunner()
+
+    result = runner.run(case, provider, make_registry(), retriever=retriever)
+
+    assert retriever.queries == [case.input]
+    assert "Contexto:" in provider.received_inputs[0]
+    assert "política de reembolso" in provider.received_inputs[0]
+    assert case.input in provider.received_inputs[0]
+    assert result.retrieved_context == retriever.passages
+
+
+def test_manually_authored_context_wins_over_retriever():
+    case = EvaluationCase(
+        id="RAG-002", input="pergunta", context=["contexto manual do autor do dataset"]
+    )
+    provider = _RecordingProvider([FinalAnswer(answer={"text": "ok"})])
+    retriever = _FakeRetriever(["contexto vindo do retriever automático"])
+    runner = AgentRunner()
+
+    result = runner.run(case, provider, make_registry(), retriever=retriever)
+
+    assert retriever.queries == []
+    assert provider.received_inputs[0] == case.input
+    assert result.retrieved_context is None
+
+
+def test_no_retriever_leaves_input_unchanged():
+    case = EvaluationCase(id="SD-004", input="pergunta qualquer")
+    provider = _RecordingProvider([FinalAnswer(answer={"text": "resposta"})])
+    runner = AgentRunner()
+
+    result = runner.run(case, provider, make_registry())
+
+    assert provider.received_inputs[0] == case.input
+    assert result.retrieved_context is None

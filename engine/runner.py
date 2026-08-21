@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from engine.models import EvaluationCase
 from engine.providers.base import FinalAnswer, ProviderAdapter, ProviderStep, ToolCallRequest
+from engine.rag.retriever import Retriever
 from engine.tools.models import ToolCall
 from engine.tools.registry import ToolRegistry
 from engine.usage import TokenUsage
@@ -18,6 +19,7 @@ class RunResult(BaseModel):
     blocked_pending_approval: bool = False
     raw_events: list[dict] = []
     token_usage: TokenUsage | None = None
+    retrieved_context: list[str] | None = None
 
 
 class _UsageAccumulator:
@@ -52,13 +54,33 @@ class AgentRunner:
         case: EvaluationCase,
         provider: ProviderAdapter,
         registry: ToolRegistry,
+        retriever: Retriever | None = None,
     ) -> RunResult:
         history: list[dict] = [{"type": "input", "input": case.input, "timestamp": time.time()}]
         tool_calls: list[ToolCall] = []
         usage_acc = _UsageAccumulator()
 
+        effective_input = case.input
+        retrieved_context: list[str] | None = None
+        # case.context (manually authored, e.g. rag-groundedness-mvp) always wins over
+        # automatic retrieval — keeps hand-written test fixtures deterministic even
+        # when a --rag retriever is also passed.
+        if retriever is not None and not case.context:
+            retrieved_context = retriever.retrieve(case.input)
+            if retrieved_context:
+                context_block = "\n".join(f"- {p}" for p in retrieved_context)
+                effective_input = f"Contexto:\n{context_block}\n\nPergunta: {case.input}"
+                history.append(
+                    {
+                        "type": "retrieval",
+                        "query": case.input,
+                        "passages": retrieved_context,
+                        "timestamp": time.time(),
+                    }
+                )
+
         for _ in range(self.max_iterations):
-            step = provider.step(case.input, registry.enabled_tools(), history)
+            step = provider.step(effective_input, registry.enabled_tools(), history)
             usage_acc.add(step)
 
             if isinstance(step, FinalAnswer):
@@ -71,6 +93,7 @@ class AgentRunner:
                     final_answer=step.answer,
                     raw_events=history,
                     token_usage=usage_acc.result(),
+                    retrieved_context=retrieved_context,
                 )
 
             assert isinstance(step, ToolCallRequest)
@@ -106,6 +129,7 @@ class AgentRunner:
                     blocked_pending_approval=True,
                     raw_events=history,
                     token_usage=usage_acc.result(),
+                    retrieved_context=retrieved_context,
                 )
 
             result = registry.execute_mocked(step.tool_name, arguments)

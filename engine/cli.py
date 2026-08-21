@@ -26,6 +26,7 @@ from engine.persistence.repository import (
 )
 from engine.providers.mock import MockProviderAdapter
 from engine.providers.ollama import OllamaProviderAdapter
+from engine.rag.store import PgVectorRetriever, ingest_document
 from engine.runner import AgentRunner
 from engine.traces import Trace, build_trace
 
@@ -70,7 +71,22 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument(
         "--groundedness-model", help="Ollama model for --groundedness (defaults to --model)"
     )
+    evaluate_parser.add_argument(
+        "--rag",
+        action="store_true",
+        help="retrieve context automatically from document_chunk before answering "
+        "(requires DATABASE_URL; ignored for cases with a manually authored context)",
+    )
+    evaluate_parser.add_argument("--rag-top-k", type=int, default=3)
     evaluate_parser.set_defaults(handler=handle_evaluate)
+
+    rag_parser = sub.add_parser("rag")
+    rag_sub = rag_parser.add_subparsers(dest="rag_command", required=True)
+    rag_ingest_parser = rag_sub.add_parser("ingest")
+    rag_ingest_parser.add_argument("path", help="path to a text file to chunk and ingest")
+    rag_ingest_parser.add_argument("--source", help="label stored alongside each chunk (defaults to the file name)")
+    rag_ingest_parser.add_argument("--embed-model", default="nomic-embed-text")
+    rag_ingest_parser.set_defaults(handler=handle_rag_ingest)
 
     trace_parser = sub.add_parser("trace")
     trace_sub = trace_parser.add_subparsers(dest="trace_command", required=True)
@@ -107,6 +123,24 @@ def handle_dataset_validate(args: argparse.Namespace) -> int:
     return 1
 
 
+def handle_rag_ingest(args: argparse.Namespace) -> int:
+    if "DATABASE_URL" not in os.environ:
+        print("erro: DATABASE_URL não definida")
+        return 1
+
+    path = Path(args.path)
+    text = path.read_text(encoding="utf-8")
+    source = args.source or path.name
+
+    conn = get_connection()
+    apply_schema(conn)
+    chunk_count = ingest_document(conn, source=source, text=text, embed_model=args.embed_model)
+    conn.close()
+
+    print(f"OK: {chunk_count} chunk(s) de {source!r} ingerido(s)")
+    return 0
+
+
 def handle_evaluate(args: argparse.Namespace) -> int:
     dataset = load_dataset(Path(args.dataset_path))
     registry = build_default_registry()
@@ -127,6 +161,17 @@ def handle_evaluate(args: argparse.Namespace) -> int:
             apply_schema(conn)
         else:
             print("aviso: DATABASE_URL não definida, pulando persistência")
+
+    retriever = None
+    if args.rag:
+        # document_chunk lives in Postgres regardless of --no-persist (that flag only
+        # controls experiment/trace persistence) — reuse `conn` when already open,
+        # otherwise open a dedicated one just for retrieval.
+        if "DATABASE_URL" not in os.environ:
+            print("erro: --rag exige DATABASE_URL")
+            return 1
+        rag_conn = conn if conn is not None else get_connection()
+        retriever = PgVectorRetriever(rag_conn)
 
     experiment_id = None
     if conn is not None and args.agent:
@@ -162,7 +207,7 @@ def handle_evaluate(args: argparse.Namespace) -> int:
                 model=args.model, system_prompt=system_prompt, timeout=480
             )
 
-        run_result = AgentRunner().run(case, provider, registry)
+        run_result = AgentRunner().run(case, provider, registry, retriever=retriever)
         trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
         judge_model = (args.judge_model or args.model) if args.llm_judge else None
         groundedness_model = (
@@ -186,6 +231,8 @@ def handle_evaluate(args: argparse.Namespace) -> int:
         suffix = f" — {evaluation.failure_reason}" if not evaluation.passed else ""
         print(f"{case.id}: {status}{suffix}")
 
+    if retriever is not None and retriever.conn is not conn:
+        retriever.conn.close()
     if conn is not None:
         conn.close()
 

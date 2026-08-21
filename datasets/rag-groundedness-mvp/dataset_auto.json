@@ -1,0 +1,23 @@
+{
+  "id": "rag-groundedness-mvp-auto",
+  "name": "RAG Groundedness MVP (retrieval automático)",
+  "version": "0.1.0",
+  "description": "Same intent as rag-groundedness-mvp/dataset.json, but with no context embedded in input and no case.context authored — validates that --rag finds the right passage among distractors in knowledge_base.txt (see docs/specs/rag-pipeline/spec.md).",
+  "cases": [
+    {
+      "id": "RAG-AUTO-001",
+      "input": "Em quantos dias posso pedir reembolso?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "RAG-AUTO-002",
+      "input": "O plano Pro dá acesso a relatórios avançados?",
+      "expected_behavior": "answer"
+    },
+    {
+      "id": "RAG-AUTO-003",
+      "input": "O suporte atende aos finais de semana?",
+      "expected_behavior": "answer"
+    }
+  ]
+}

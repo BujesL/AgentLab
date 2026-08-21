@@ -1,3 +1,21 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS document_chunk (
+    id SERIAL PRIMARY KEY,
+    source TEXT NOT NULL,
+    chunk_index INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    embedding vector(768) NOT NULL
+);
+
+-- No ivfflat/hnsw index: an approximate index needs a dataset large enough to
+-- train its clusters (ivfflat's default lists=100 on a handful of rows returns
+-- near-random neighbors — confirmed empirically during T-pipeline validation, see
+-- docs/specs/rag-pipeline/tasks.md). Exact brute-force <=> scan is correct and
+-- fast enough at the MVP's dataset sizes; adding an approximate index is a later
+-- decision to make once real document volume justifies it.
+DROP INDEX IF EXISTS document_chunk_embedding_idx;
+
 CREATE TABLE IF NOT EXISTS dataset (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

@@ -10,6 +10,7 @@ FORBIDDEN_KEYS = {"reasoning", "thought", "chain_of_thought"}
 
 TraceEventType = Literal[
     "input",
+    "retrieval",
     "tool_call_request",
     "tool_result",
     "final_answer",

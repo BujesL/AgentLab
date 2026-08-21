@@ -36,7 +36,11 @@ def evaluate_groundedness(
     base_url: str = "http://localhost:11434",
     timeout: int = 180,
 ) -> EvalScore:
-    if not case.context:
+    # case.context (manually authored) always wins; run_result.retrieved_context
+    # (from an automatic --rag retriever) is the dynamic fallback — see
+    # docs/specs/rag-pipeline/spec.md.
+    context = case.context or run_result.retrieved_context
+    if not context:
         return EvalScore(
             metric="groundedness",
             score=1.0,
@@ -46,7 +50,7 @@ def evaluate_groundedness(
 
     actual_text = (run_result.final_answer or {}).get("text", "")
     prompt = GROUNDEDNESS_PROMPT_TEMPLATE.format(
-        context="\n".join(f"- {passage}" for passage in case.context),
+        context="\n".join(f"- {passage}" for passage in context),
         actual_text=actual_text,
     )
 
