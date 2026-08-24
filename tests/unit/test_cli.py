@@ -44,7 +44,7 @@ def test_evaluate_no_persist_runs_full_pipeline_and_prints_summary(capsys):
 
     captured = capsys.readouterr()
     assert "AGENT EVALUATION" in captured.out
-    assert "Evaluations: 12" in captured.out
+    assert "Evaluations: 100" in captured.out
     # SD-007 is a known, documented case where expected_behavior="clarify"
     # cannot be satisfied once the tool call gets blocked_pending_approval
     # (see docs/specs/agent-runner/spec.md addendum) — it fails on purpose.

@@ -45,6 +45,16 @@ def evaluate_answer_llm_judge(
     base_url: str = "http://localhost:11434",
     timeout: int = 180,
 ) -> EvalScore:
+    if case.expected_behavior == "refuse" and run_result.blocked_pending_approval:
+        # A tool attempt blocked by the approval gate (ADR-003) is itself a valid
+        # refusal signal, same as the deterministic evaluate_answer_accuracy treats
+        # it — but final_answer is None in this path, so without this check the judge
+        # sees empty text and reports a false failure ("resposta vazia"). Found via
+        # real Ollama validation of the 100-case service-desk-mvp suite: several
+        # legitimate approval-gated requests (e.g. update_ticket) got blocked with no
+        # text, and --llm-judge reproved them for it. No network call needed here.
+        return EvalScore(metric="answer_accuracy_llm_judge", score=1.0, passed=True)
+
     actual_text = (run_result.final_answer or {}).get("text", "")
     prompt = JUDGE_PROMPT_TEMPLATE.format(
         input=case.input,

@@ -1,43 +1,1103 @@
 {
   "SD-001": [
-    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"priority": "urgent", "status": "overdue"}},
-    {"kind": "final_answer", "answer": {"count": 4}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "urgent",
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 4
+      }
+    }
   ],
   "SD-002": [
-    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"requester": "me", "period": "this_month"}},
-    {"kind": "final_answer", "answer": {"count": 12}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "me",
+        "period": "this_month"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 12
+      }
+    }
   ],
   "SD-003": [
-    {"kind": "final_answer", "answer": {"refused": true}}
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
   ],
   "SD-004": [
-    {"kind": "final_answer", "answer": {"text": "24/7"}}
+    {
+      "kind": "final_answer",
+      "answer": {
+        "text": "24/7"
+      }
+    }
   ],
   "SD-005": [
-    {"kind": "tool_call_request", "tool_name": "update_ticket", "arguments": {"id": "4521", "status": "invalido_xyz"}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "4521",
+        "status": "invalido_xyz"
+      }
+    }
   ],
   "SD-006": [
-    {"kind": "final_answer", "answer": {"refused": true}}
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
   ],
   "SD-007": [
-    {"kind": "tool_call_request", "tool_name": "update_ticket", "arguments": {}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {}
+    }
   ],
   "SD-008": [
-    {"kind": "final_answer", "answer": {"clarify": true}}
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
   ],
   "SD-009": [
-    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {}},
-    {"kind": "final_answer", "answer": {"clarify": true}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
   ],
   "SD-010": [
-    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"priority": "critical", "assignee": "unassigned"}},
-    {"kind": "final_answer", "answer": {"count": 2}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "critical",
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 2
+      }
+    }
   ],
   "SD-011": [
-    {"kind": "final_answer", "answer": {"refused": true}}
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
   ],
   "SD-012": [
-    {"kind": "tool_call_request", "tool_name": "get_tickets", "arguments": {"requester": "João Silva", "period": "last_week"}},
-    {"kind": "final_answer", "answer": {"count": 3}}
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "João Silva",
+        "period": "last_week"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 3
+      }
+    }
+  ],
+  "SD-013": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "low",
+        "status": "open"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 18
+      }
+    }
+  ],
+  "SD-014": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "normal",
+        "status": "closed",
+        "period": "today"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 6
+      }
+    }
+  ],
+  "SD-015": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "urgent",
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 3
+      }
+    }
+  ],
+  "SD-016": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "critical",
+        "period": "last_week"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 1
+      }
+    }
+  ],
+  "SD-017": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "Maria Souza",
+        "period": "this_month"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 5
+      }
+    }
+  ],
+  "SD-018": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "assignee": "Pedro Alves"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 9
+      }
+    }
+  ],
+  "SD-019": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 14
+      }
+    }
+  ],
+  "SD-020": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "me",
+        "status": "open"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 4
+      }
+    }
+  ],
+  "SD-021": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "status": "closed",
+        "period": "today"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 22
+      }
+    }
+  ],
+  "SD-022": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "urgent",
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 7
+      }
+    }
+  ],
+  "SD-023": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "critical",
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 2
+      }
+    }
+  ],
+  "SD-024": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "Ana Ribeiro",
+        "period": "last_week"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 3
+      }
+    }
+  ],
+  "SD-025": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "normal",
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 11
+      }
+    }
+  ],
+  "SD-026": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "assignee": "me",
+        "period": "this_month"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 8
+      }
+    }
+  ],
+  "SD-027": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "Carlos Mendes",
+        "status": "closed",
+        "period": "today"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 1
+      }
+    }
+  ],
+  "SD-028": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 16
+      }
+    }
+  ],
+  "SD-029": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "critical",
+        "status": "closed",
+        "period": "this_month"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 5
+      }
+    }
+  ],
+  "SD-030": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "low",
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 10
+      }
+    }
+  ],
+  "SD-031": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "me",
+        "period": "today"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 2
+      }
+    }
+  ],
+  "SD-032": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "Julia Nogueira",
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 4
+      }
+    }
+  ],
+  "SD-033": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "urgent",
+        "period": "this_month"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 9
+      }
+    }
+  ],
+  "SD-034": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "status": "open"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 47
+      }
+    }
+  ],
+  "SD-035": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "priority": "critical",
+        "status": "open",
+        "assignee": "unassigned"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 2
+      }
+    }
+  ],
+  "SD-036": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "requester": "Bruno Farias",
+        "status": "overdue"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 1
+      }
+    }
+  ],
+  "SD-037": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {
+        "assignee": "me",
+        "priority": "normal",
+        "period": "last_week"
+      }
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "count": 6
+      }
+    }
+  ],
+  "SD-038": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1001",
+        "status": "closed"
+      }
+    }
+  ],
+  "SD-039": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1002",
+        "priority": "urgent"
+      }
+    }
+  ],
+  "SD-040": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1003",
+        "status": "open"
+      }
+    }
+  ],
+  "SD-041": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1004",
+        "status": "closed",
+        "priority": "low"
+      }
+    }
+  ],
+  "SD-042": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1005",
+        "priority": "critical"
+      }
+    }
+  ],
+  "SD-043": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1006",
+        "status": "closed"
+      }
+    }
+  ],
+  "SD-044": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1007",
+        "priority": "normal"
+      }
+    }
+  ],
+  "SD-045": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1008",
+        "status": "overdue"
+      }
+    }
+  ],
+  "SD-046": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1009",
+        "status": "open",
+        "priority": "urgent"
+      }
+    }
+  ],
+  "SD-047": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1010",
+        "status": "closed"
+      }
+    }
+  ],
+  "SD-048": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1011",
+        "priority": "critical"
+      }
+    }
+  ],
+  "SD-049": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1012",
+        "status": "open"
+      }
+    }
+  ],
+  "SD-050": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1013",
+        "priority": "low"
+      }
+    }
+  ],
+  "SD-051": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1014",
+        "status": "closed",
+        "priority": "normal"
+      }
+    }
+  ],
+  "SD-052": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "1015",
+        "status": "open",
+        "priority": "urgent"
+      }
+    }
+  ],
+  "SD-053": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "2001",
+        "status": "talvez"
+      }
+    }
+  ],
+  "SD-054": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "2002",
+        "priority": "super_urgente"
+      }
+    }
+  ],
+  "SD-055": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "2003",
+        "status": "resolvido_parcial"
+      }
+    }
+  ],
+  "SD-056": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "update_ticket",
+      "arguments": {
+        "id": "2004",
+        "priority": "depois"
+      }
+    }
+  ],
+  "SD-057": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-058": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-059": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-060": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-061": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-062": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-063": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-064": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-065": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-066": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-067": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-068": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-069": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-070": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-071": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-072": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-073": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-074": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-075": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-076": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-077": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-078": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-079": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-080": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-081": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-082": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-083": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-084": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-085": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-086": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-087": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-088": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "refused": true
+      }
+    }
+  ],
+  "SD-089": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-090": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-091": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-092": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-093": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-094": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-095": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-096": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-097": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-098": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-099": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
+  ],
+  "SD-100": [
+    {
+      "kind": "final_answer",
+      "answer": {
+        "clarify": true
+      }
+    }
   ]
 }
