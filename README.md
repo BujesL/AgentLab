@@ -1,4 +1,4 @@
-# AgentLab
+# AgentLab - Ainda em desenvolvimento
 
 **Motor de engenharia para avaliar agentes de IA de forma sistemática e reproduzível** — tool calling, groundedness, safety, custo, latência e regressão entre versões, com quality gates que bloqueiam automaticamente um agente que piorou.
 
