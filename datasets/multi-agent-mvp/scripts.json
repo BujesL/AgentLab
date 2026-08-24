@@ -1,0 +1,7 @@
+{
+  "MA-001": [{"kind": "final_answer", "answer": {"text": "Sua próxima fatura é R$ 149,90."}}],
+  "MA-002": [{"kind": "final_answer", "answer": {"text": "Vamos reiniciar sua sessão para resolver o travamento."}}],
+  "MA-003": [{"kind": "final_answer", "answer": {"text": "Vamos processar o estorno da cobrança duplicada."}}],
+  "MA-004": [{"kind": "final_answer", "answer": {"text": "Vamos verificar o bug na tela de relatórios."}}],
+  "MA-005": [{"kind": "final_answer", "answer": {"text": "Vamos priorizar o estorno da cobrança duplicada primeiro."}}]
+}

@@ -105,3 +105,63 @@ def build_default_registry() -> ToolRegistry:
         ),
     )
     return registry
+
+
+def build_billing_registry() -> ToolRegistry:
+    """Tool registry for the billing_agent specialist in
+    datasets/multi-agent-mvp/dataset.json. Deliberately disjoint from
+    build_technical_registry() — evaluate_handoff's leakage check only means
+    something if the two specialists' scopes don't overlap.
+    """
+    registry = ToolRegistry()
+    registry.register(
+        ToolSpec(
+            name="get_invoice",
+            description="Get the user's current invoice amount and due date.",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        stub_result={"amount": 149.90, "due_date": "2026-09-05"},
+    )
+    registry.register(
+        ToolSpec(
+            name="request_refund",
+            description="Request a refund for a duplicate or incorrect charge.",
+            input_schema={
+                "type": "object",
+                "properties": {"reason": {"type": "string"}},
+                "additionalProperties": False,
+            },
+            risk_level="medium",
+        ),
+        stub_result={"status": "requested"},
+    )
+    return registry
+
+
+def build_technical_registry() -> ToolRegistry:
+    """Tool registry for the technical_agent specialist. See build_billing_registry."""
+    registry = ToolRegistry()
+    registry.register(
+        ToolSpec(
+            name="check_system_status",
+            description="Check whether there is a known outage affecting the user.",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        stub_result={"status": "operational"},
+    )
+    registry.register(
+        ToolSpec(
+            name="restart_session",
+            description="Force-restart the user's session to clear a stuck client state.",
+            input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+        ),
+        stub_result={"restarted": True},
+    )
+    return registry
+
+
+REGISTRY_BUILDERS = {
+    "default": build_default_registry,
+    "billing": build_billing_registry,
+    "technical": build_technical_registry,
+}

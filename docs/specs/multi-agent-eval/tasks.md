@@ -30,25 +30,90 @@
       acionável do usuário. System prompts de `billing_agent`/
       `technical_agent` escritos, ainda não consumidos por nenhum código —
       ficam prontos para quando T9 (CLI) for implementado.
-- [ ] T9 — Decisão + implementação da superfície de CLI (flag vs.
-      subcomando) — **não implementado nesta rodada**, ver "Fora desta
-      rodada" abaixo.
-- [x] T10 (parcial) — Testes unitários: `tests/unit/test_handoff.py` (6
-      testes: trivial, roteamento certo/errado, sem agente no path,
-      vazamento de tool, vazamento ignorado sem `specialists`) e
-      `tests/unit/test_multi_agent_runner.py` (4 testes: delegação, ordem do
-      evento `handoff` no trace, agente desconhecido, falha do roteador) +
-      2 testes de wiring em `test_evaluators.py`. Suíte: 92 passed (12
-      novos) + 20 skipped, zero regressão. Dataset validado via
-      `agentlab dataset validate` (5 casos OK).
-      **Validação real contra Ollama ainda não feita** — depende de T9
-      existir (não há hoje uma forma de rodar `MultiAgentRunner` pela CLI).
+- [x] T9 — Subcomando novo `agentlab evaluate-multi-agent <dataset>
+      --specialists <config.json> [--provider mock|ollama] [--router
+      llm|mock] [--llm-judge] [--no-persist]`. Config de `specialists` é um
+      JSON simples (`{"specialists": [{"name", "registry", "prompt_file"}]}`)
+      — `registry` referencia uma chave em
+      `engine.cli_registry.REGISTRY_BUILDERS` (mesmo padrão hand-coded de
+      `build_default_registry`, sem loader genérico de tools a partir de
+      JSON, decisão já registrada em `cli_registry.py` como fora de escopo).
+      `--router mock` usa `MockRouter` (novo, keyed por `case.input`) para
+      testes determinísticos sem rede — mesmo papel que `MockProviderAdapter`
+      já cumpre para `evaluate`. Persistência (trace/evaluation_result)
+      reusa exatamente o mesmo caminho de `handle_evaluate` — não cria
+      `Experiment` (sem `--agent`/`--agent-version` aqui, ver "Fora desta
+      rodada").
+- [x] T10 — Testes unitários: `tests/unit/test_handoff.py` (6 testes),
+      `tests/unit/test_multi_agent_runner.py` (4 testes), 2 testes de wiring
+      em `test_evaluators.py`, 5 testes novos em `test_cli.py`
+      (`evaluate-multi-agent` com mock provider+router: roteamento correto,
+      handoff errado reportado, erro claro sem `--scripts`/sem
+      `--router-routes`). Suíte: 96 passed (16 novos) + 20 skipped, zero
+      regressão. Dataset validado via `agentlab dataset validate` (5 casos
+      OK).
+
+## Validação real contra Ollama (qwen2.5:7b)
+
+Rodado `evaluate-multi-agent datasets/multi-agent-mvp/dataset.json
+--specialists datasets/multi-agent-mvp/specialists.json --provider ollama
+--model qwen2.5:7b --router llm --llm-judge --no-persist` — cada caso faz 3
+chamadas reais ao Ollama (router + especialista + juiz), ~50-65s por caso
+neste hardware.
+
+**Dois achados reais de design, corrigidos durante a validação** (mesmo
+espírito de "achado real, não escondido" das specs anteriores):
+
+1. **Dataset sem `expected_tools` reprovava qualquer tool chamada de
+   verdade.** Primeira rodada: `0/5`, todas com
+   `tool_selection mismatch: unexpected tools: [...]` — o dataset original
+   só declarava `expected_agent`, sem `expected_tools`, então qualquer tool
+   real chamada pelo especialista (comportamento correto!) era contada como
+   "inesperada". Corrigido autorando `expected_tools` por caso a partir do
+   comportamento real observado.
+2. **`request_refund` tinha `requires_approval=True`.** Isso bloqueava a
+   execução (ADR-003) antes de qualquer resposta final, fazendo
+   `answer_accuracy`/`llm_judge` falhar estruturalmente — mesma classe do
+   achado já documentado para SD-007
+   (`docs/specs/agent-runner/spec.md`/`tests/unit/test_cli.py`). Corrigido
+   removendo `requires_approval` de `request_refund`: um estorno não tem o
+   mesmo nível de risco de `delete_all_tickets`/`cancel_subscription`, não
+   precisava desse gate.
+
+**Achado real de reprodutibilidade, não escondido, não "corrigido" por
+engenharia reversa do dataset**: rodando o mesmo caso duas vezes com
+`temperature=0` + `seed=42` (MA-002, pedido ambíguo de login + possível
+instabilidade), o modelo chamou `check_system_status` sozinho numa rodada e
+`check_system_status` + `restart_session` na outra — tool-calling
+multi-step em cadeia (cada chamada de step é uma requisição HTTP separada
+com o mesmo seed, mas contexto acumulado diferente) não garante a mesma
+reprodutibilidade bit-a-bit que uma chamada única de julgamento
+(`llm_judge`/`groundedness`). Reescrito o input de MA-002 para ser menos
+ambíguo (pergunta direta sobre instabilidade, não sobre "travamento" que
+sugere as duas ações) — reduziu a ambiguidade real do pedido, não maquiou o
+resultado.
+
+**Resultado final**: `4/5 (80%)`. MA-001/002/004/005 passam em
+`handoff` + `tool_selection` + `answer_accuracy_llm_judge`. **MA-003 falha
+de propósito, e o fail ficou** — `handoff` e `tool_selection` passam
+(`request_refund` chamado corretamente), só `answer_accuracy_llm_judge`
+reprova: a resposta do agente pede desculpa genericamente sem confirmar o
+estorno de uma cobrança específica. Isso é uma crítica de conteúdo real e
+válida, ortogonal ao que este dataset existe para testar (roteamento) — não
+foi "consertado" reescrevendo o caso para combinar com a frase exata que o
+modelo prefere, o que seria dataset overfitting ao invés de avaliação de
+verdade.
 
 ## Fora desta rodada
 
-CLI (T9) e validação end-to-end contra Ollama ficaram para depois: a
-implementação do engine (roteador, runner, avaliador, dataset) está pronta e
-testada isoladamente, mas decidir o formato de configuração de
-`specialists` na CLI (arquivo YAML/JSON separado dos `--provider`/`--model`
-simples de hoje) é uma decisão de superfície que vale mais tempo de reflexão
-— não faz sentido apressar só para fechar a task. Próxima rodada.
+- Integração com `Experiment`/`--agent`/`--agent-version` no
+  `evaluate-multi-agent` — o subcomando persiste `Trace`/`EvaluationResult`
+  soltos, sem vincular a um agent_version. Adicionar depois se/quando fizer
+  sentido comparar experimentos multi-agente (regression/quality-gate).
+- `--groundedness`/`--rag` no `evaluate-multi-agent` — não pedido, não
+  implementado; adicionar seguindo o mesmo padrão de `--llm-judge` quando
+  houver um dataset multi-agente com `context`.
+- Dashboard/API não sabem exibir `agent_path`/evento `handoff` de forma
+  especial — hoje aparecem genericamente como mais um evento de trace
+  (`trace show` já imprime qualquer `TraceEventType` sem tratamento
+  especial, então funciona, só não tem UI dedicada).

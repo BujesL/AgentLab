@@ -85,3 +85,113 @@ def test_trace_show_missing_database_url_reports_error(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "DATABASE_URL" in captured.out
+
+
+# --- evaluate-multi-agent ------------------------------------------------------
+
+MULTI_AGENT_DATASET = REPO_ROOT / "datasets" / "multi-agent-mvp" / "dataset.json"
+MULTI_AGENT_SPECIALISTS = REPO_ROOT / "datasets" / "multi-agent-mvp" / "specialists.json"
+MULTI_AGENT_SCRIPTS = REPO_ROOT / "datasets" / "multi-agent-mvp" / "scripts.json"
+MULTI_AGENT_ROUTES = REPO_ROOT / "datasets" / "multi-agent-mvp" / "router_routes.json"
+
+
+def test_evaluate_multi_agent_routes_correctly_with_mock_router_and_provider(capsys):
+    exit_code = main(
+        [
+            "evaluate-multi-agent",
+            str(MULTI_AGENT_DATASET),
+            "--specialists",
+            str(MULTI_AGENT_SPECIALISTS),
+            "--provider",
+            "mock",
+            "--scripts",
+            str(MULTI_AGENT_SCRIPTS),
+            "--router",
+            "mock",
+            "--router-routes",
+            str(MULTI_AGENT_ROUTES),
+            "--no-persist",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert "Evaluations: 5" in captured.out
+    # answer_accuracy fails without --llm-judge (dataset has no expected_answer, it's
+    # routing-focused) — that's expected, same limitation documented for other
+    # datasets. Assert on handoff specifically not showing up as a failure reason.
+    assert "handoff" not in captured.out
+    for case_id in ("MA-001", "MA-002", "MA-003", "MA-004", "MA-005"):
+        assert f"{case_id}:" in captured.out
+    assert exit_code == 1  # answer_accuracy fails on all 5, routing itself is correct
+
+
+def test_evaluate_multi_agent_reports_wrong_handoff(tmp_path, capsys):
+    bad_routes = tmp_path / "bad_routes.json"
+    bad_routes.write_text(
+        json.dumps({"MA-001": "technical_agent"}), encoding="utf-8"
+    )
+
+    exit_code = main(
+        [
+            "evaluate-multi-agent",
+            str(MULTI_AGENT_DATASET),
+            "--specialists",
+            str(MULTI_AGENT_SPECIALISTS),
+            "--provider",
+            "mock",
+            "--scripts",
+            str(MULTI_AGENT_SCRIPTS),
+            "--router",
+            "mock",
+            "--router-routes",
+            str(bad_routes),
+            "--no-persist",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "MA-001: FAIL" in captured.out
+    assert "billing_agent" in captured.out and "technical_agent" in captured.out
+
+
+def test_evaluate_multi_agent_requires_scripts_with_mock_provider(capsys):
+    exit_code = main(
+        [
+            "evaluate-multi-agent",
+            str(MULTI_AGENT_DATASET),
+            "--specialists",
+            str(MULTI_AGENT_SPECIALISTS),
+            "--router",
+            "mock",
+            "--router-routes",
+            str(MULTI_AGENT_ROUTES),
+            "--no-persist",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "--scripts" in captured.out
+
+
+def test_evaluate_multi_agent_requires_router_routes_with_mock_router(capsys):
+    exit_code = main(
+        [
+            "evaluate-multi-agent",
+            str(MULTI_AGENT_DATASET),
+            "--specialists",
+            str(MULTI_AGENT_SPECIALISTS),
+            "--provider",
+            "mock",
+            "--scripts",
+            str(MULTI_AGENT_SCRIPTS),
+            "--router",
+            "mock",
+            "--no-persist",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "--router-routes" in captured.out

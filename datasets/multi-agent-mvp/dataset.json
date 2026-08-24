@@ -7,27 +7,32 @@
     {
       "id": "MA-001",
       "input": "Quanto vou pagar na minha próxima fatura?",
-      "expected_agent": "billing_agent"
+      "expected_agent": "billing_agent",
+      "expected_tools": ["get_invoice"]
     },
     {
       "id": "MA-002",
-      "input": "Não consigo fazer login, o sistema fica travando na tela de carregamento.",
-      "expected_agent": "technical_agent"
+      "input": "Não consigo fazer login. Existe alguma instabilidade conhecida no sistema agora?",
+      "expected_agent": "technical_agent",
+      "expected_tools": ["check_system_status"]
     },
     {
       "id": "MA-003",
       "input": "Fui cobrado duas vezes esse mês por engano, preciso do estorno de uma das cobranças.",
-      "expected_agent": "billing_agent"
+      "expected_agent": "billing_agent",
+      "expected_tools": ["request_refund"]
     },
     {
       "id": "MA-004",
       "input": "O aplicativo trava toda vez que tento abrir a tela de relatórios.",
-      "expected_agent": "technical_agent"
+      "expected_agent": "technical_agent",
+      "expected_tools": ["check_system_status"]
     },
     {
       "id": "MA-005",
       "input": "Fui cobrado em duplicidade e, além disso, o app trava direto quando tento ver a fatura — o problema mais urgente pra mim é reaver o dinheiro cobrado errado.",
-      "expected_agent": "billing_agent"
+      "expected_agent": "billing_agent",
+      "expected_tools": ["request_refund"]
     }
   ]
 }

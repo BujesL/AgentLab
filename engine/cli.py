@@ -1,9 +1,10 @@
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
 
-from engine.cli_registry import build_default_registry
+from engine.cli_registry import REGISTRY_BUILDERS, build_default_registry
 from engine.cli_scripts import load_scripts
 from engine.datasets import load_dataset, validate_dataset
 from engine.evaluators.aggregate import evaluate_case
@@ -14,6 +15,9 @@ from engine.experiments.repository import (
     get_or_create_agent_version,
 )
 from engine.experiments.summary import get_tool_selection_pct, summarize_experiment
+from engine.multi_agent.models import AgentSpec
+from engine.multi_agent.router import LLMRouter, MockRouter
+from engine.multi_agent.runner import MultiAgentRunner
 from engine.prompts.repository import get_or_create_prompt_version
 from engine.quality_gates.evaluate import evaluate_quality_gate, load_policy
 from engine.regression.compare import compare_experiments
@@ -79,6 +83,38 @@ def build_parser() -> argparse.ArgumentParser:
     )
     evaluate_parser.add_argument("--rag-top-k", type=int, default=3)
     evaluate_parser.set_defaults(handler=handle_evaluate)
+
+    multi_agent_parser = sub.add_parser("evaluate-multi-agent")
+    multi_agent_parser.add_argument("dataset_path")
+    multi_agent_parser.add_argument(
+        "--specialists",
+        required=True,
+        help="path to a JSON file describing specialists: "
+        '{"specialists": [{"name", "registry", "prompt_file"}, ...]} '
+        "(registry must be a key in engine.cli_registry.REGISTRY_BUILDERS)",
+    )
+    multi_agent_parser.add_argument("--provider", choices=["mock", "ollama"], default="mock")
+    multi_agent_parser.add_argument("--model", default="mock")
+    multi_agent_parser.add_argument(
+        "--scripts", help="path to a JSON file scripting the mock provider (required when --provider mock)"
+    )
+    multi_agent_parser.add_argument("--router", choices=["llm", "mock"], default="llm")
+    multi_agent_parser.add_argument(
+        "--router-model", help="Ollama model for --router llm (defaults to --model)"
+    )
+    multi_agent_parser.add_argument(
+        "--router-routes",
+        help='path to a JSON file mapping case id -> specialist name (required when --router mock), '
+        'e.g. {"MA-001": "billing_agent"}',
+    )
+    multi_agent_parser.add_argument(
+        "--llm-judge", action="store_true", help="also score answer_accuracy via LLM-as-a-Judge"
+    )
+    multi_agent_parser.add_argument(
+        "--judge-model", help="Ollama model for --llm-judge (defaults to --model)"
+    )
+    multi_agent_parser.add_argument("--no-persist", action="store_true")
+    multi_agent_parser.set_defaults(handler=handle_evaluate_multi_agent)
 
     rag_parser = sub.add_parser("rag")
     rag_sub = rag_parser.add_subparsers(dest="rag_command", required=True)
@@ -234,6 +270,112 @@ def handle_evaluate(args: argparse.Namespace) -> int:
 
     if retriever is not None and retriever.conn is not conn:
         retriever.conn.close()
+    if conn is not None:
+        conn.close()
+
+    print_summary(entries)
+    return 0 if all(e.passed for _, e, _ in entries) else 1
+
+
+def _load_specialists_config(path: Path) -> list[dict]:
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)["specialists"]
+
+
+def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
+    dataset = load_dataset(Path(args.dataset_path))
+    specialists_config = _load_specialists_config(Path(args.specialists))
+
+    if args.provider == "mock" and not args.scripts:
+        print("erro: --scripts é obrigatório com --provider mock")
+        return 1
+    scripts = load_scripts(Path(args.scripts)) if args.scripts else {}
+
+    if args.router == "mock" and not args.router_routes:
+        print("erro: --router-routes é obrigatório com --router mock")
+        return 1
+
+    if args.router == "llm":
+        router = LLMRouter(model=args.router_model or args.model)
+    else:
+        routes_by_case_id = json.loads(Path(args.router_routes).read_text(encoding="utf-8"))
+        routes_by_input = {
+            case.input: routes_by_case_id[case.id]
+            for case in dataset.cases
+            if case.id in routes_by_case_id
+        }
+        router = MockRouter(routes_by_input)
+
+    conn = None
+    if not args.no_persist:
+        if "DATABASE_URL" in os.environ:
+            conn = get_connection()
+            apply_schema(conn)
+        else:
+            print("aviso: DATABASE_URL não definida, pulando persistência")
+
+    # Ollama providers/registries are stateless — build them once and reuse across
+    # cases. MockProviderAdapter is scripted per case, so mock specialists are
+    # rebuilt fresh per case below (same pattern as handle_evaluate).
+    ollama_specialists: dict[str, AgentSpec] = {}
+    if args.provider == "ollama":
+        for spec_cfg in specialists_config:
+            system_prompt = None
+            if spec_cfg.get("prompt_file"):
+                system_prompt = Path(spec_cfg["prompt_file"]).read_text(encoding="utf-8")
+            ollama_specialists[spec_cfg["name"]] = AgentSpec(
+                name=spec_cfg["name"],
+                provider=OllamaProviderAdapter(
+                    model=args.model, system_prompt=system_prompt, timeout=480
+                ),
+                registry=REGISTRY_BUILDERS[spec_cfg.get("registry", "default")](),
+            )
+
+    entries: list[tuple[str, EvaluationResult, Trace]] = []
+
+    for case in dataset.cases:
+        if args.provider == "mock":
+            if case.id not in scripts:
+                print(f"AVISO: sem script para {case.id}, pulando")
+                continue
+            case_specialists = {
+                spec_cfg["name"]: AgentSpec(
+                    name=spec_cfg["name"],
+                    provider=MockProviderAdapter(scripts[case.id]),
+                    registry=REGISTRY_BUILDERS[spec_cfg.get("registry", "default")](),
+                )
+                for spec_cfg in specialists_config
+            }
+        else:
+            case_specialists = ollama_specialists
+
+        run_result = MultiAgentRunner().run(case, router, case_specialists)
+        trace = build_trace(run_result, model=args.model)
+
+        chosen_agent = run_result.agent_path[-1] if len(run_result.agent_path) > 1 else None
+        chosen_registry = (
+            case_specialists[chosen_agent].registry
+            if chosen_agent in case_specialists
+            else None
+        )
+        judge_model = (args.judge_model or args.model) if args.llm_judge else None
+        evaluation = evaluate_case(
+            case,
+            run_result,
+            llm_judge_model=judge_model,
+            registry=chosen_registry,
+            specialists=case_specialists,
+        )
+
+        if conn is not None:
+            save_trace(conn, trace)
+            save_evaluation_result(conn, evaluation, trace_id=trace.id, experiment_id=None)
+
+        entries.append((case.id, evaluation, trace))
+        status = "PASS" if evaluation.passed else "FAIL"
+        suffix = f" — {evaluation.failure_reason}" if not evaluation.passed else ""
+        print(f"{case.id}: {status}{suffix}")
+
     if conn is not None:
         conn.close()
 

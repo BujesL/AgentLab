@@ -1,0 +1,14 @@
+{
+  "specialists": [
+    {
+      "name": "billing_agent",
+      "registry": "billing",
+      "prompt_file": "datasets/multi-agent-mvp/billing_agent_system_prompt.md"
+    },
+    {
+      "name": "technical_agent",
+      "registry": "technical",
+      "prompt_file": "datasets/multi-agent-mvp/technical_agent_system_prompt.md"
+    }
+  ]
+}

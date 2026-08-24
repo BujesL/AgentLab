@@ -69,3 +69,18 @@ class LLMRouter:
             return str(decision["agent"])
         except (KeyError, ValueError, json.JSONDecodeError) as exc:
             raise RoutingError(f"failed to parse router output: {raw[:200]!r}") from exc
+
+
+class MockRouter:
+    """Deterministic Router test double, keyed by the exact `input` text (dataset
+    case inputs are unique). Used by `agentlab evaluate-multi-agent --router mock`
+    for CI/offline testing, same role MockProviderAdapter plays for --provider mock.
+    """
+
+    def __init__(self, routes: dict[str, str]) -> None:
+        self._routes = routes
+
+    def route(self, input: str, specialists: list[str]) -> str:
+        if input not in self._routes:
+            raise RoutingError(f"no mock route configured for input: {input!r}")
+        return self._routes[input]
