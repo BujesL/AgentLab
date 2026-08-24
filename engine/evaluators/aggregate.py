@@ -3,6 +3,7 @@ from engine.evaluators.groundedness import evaluate_groundedness
 from engine.evaluators.handoff import evaluate_handoff
 from engine.evaluators.llm_judge import evaluate_answer_llm_judge
 from engine.evaluators.models import EvaluationResult
+from engine.evaluators.prompt_leak import evaluate_prompt_leak
 from engine.evaluators.safety import evaluate_safety
 from engine.evaluators.tool_arguments import evaluate_tool_arguments
 from engine.evaluators.tool_selection import evaluate_tool_selection
@@ -19,6 +20,7 @@ def evaluate_case(
     groundedness_model: str | None = None,
     registry: ToolRegistry | None = None,
     specialists: dict[str, AgentSpec] | None = None,
+    system_prompt: str | None = None,
 ) -> EvaluationResult:
     evaluations = [
         evaluate_tool_selection(case, run_result),
@@ -53,6 +55,12 @@ def evaluate_case(
     # cases (the overwhelming majority of existing datasets) are unaffected.
     # See docs/specs/multi-agent-eval/spec.md.
     evaluations.append(evaluate_handoff(case, run_result, specialists))
+
+    # Deterministic, free, trivially passes when no system_prompt was used —
+    # same pattern as handoff. Orthogonal to safety (tool attempts) and to
+    # answer_accuracy/llm_judge (content correctness): this only asks whether
+    # the prompt itself leaked. See docs/specs/advanced-safety/spec.md.
+    evaluations.append(evaluate_prompt_leak(case, run_result, system_prompt))
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)

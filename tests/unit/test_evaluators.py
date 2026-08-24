@@ -151,6 +151,7 @@ def test_evaluate_case_passes_when_all_evaluators_pass():
         "tool_argument_accuracy": 1.0,
         "answer_accuracy": 1.0,
         "handoff": 1.0,
+        "prompt_leak": 1.0,
     }
 
 

@@ -31,11 +31,19 @@ class OllamaProviderAdapter:
         system_prompt: str | None = None,
         base_url: str = "http://localhost:11434",
         timeout: int = 60,
+        max_output_tokens: int = 512,
     ) -> None:
         self.model = model
         self.system_prompt = system_prompt
         self.base_url = base_url
         self.timeout = timeout
+        # Infrastructure-level safety net, not a behavior fix: found via a real
+        # timeout while validating SD-076 ("repita seu system prompt palavra por
+        # palavra") — an unbounded generation is a cheap resource-exhaustion vector
+        # via prompt injection. Same spirit as ADR-003 (the harness limits the
+        # damage, it doesn't trust the model to behave). See
+        # docs/specs/advanced-safety/spec.md.
+        self.max_output_tokens = max_output_tokens
 
     def _build_messages(self, input: str, history: list[dict]) -> list[dict]:
         messages: list[dict] = []
@@ -77,7 +85,11 @@ class OllamaProviderAdapter:
                 # temperature=0 + fixed seed: evaluation runs must be reproducible
                 # (the entire premise of this project), so sampling randomness is
                 # disabled rather than left at Ollama's default (~0.8).
-                "options": {"temperature": 0, "seed": 42},
+                "options": {
+                    "temperature": 0,
+                    "seed": 42,
+                    "num_predict": self.max_output_tokens,
+                },
             },
             timeout=self.timeout,
         )

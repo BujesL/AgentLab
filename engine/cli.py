@@ -257,6 +257,7 @@ def handle_evaluate(args: argparse.Namespace) -> int:
             llm_judge_model=judge_model,
             groundedness_model=groundedness_model,
             registry=registry,
+            system_prompt=system_prompt,
         )
 
         if conn is not None:
@@ -342,6 +343,7 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
                     model=args.model, system_prompt=system_prompt, timeout=480
                 ),
                 registry=REGISTRY_BUILDERS[spec_cfg.get("registry", "default")](),
+                system_prompt=system_prompt,
             )
 
     entries: list[tuple[str, EvaluationResult, Trace]] = []
@@ -372,12 +374,16 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
             else None
         )
         judge_model = (args.judge_model or args.model) if args.llm_judge else None
+        chosen_system_prompt = (
+            case_specialists[chosen_agent].system_prompt if chosen_agent in case_specialists else None
+        )
         evaluation = evaluate_case(
             case,
             run_result,
             llm_judge_model=judge_model,
             registry=chosen_registry,
             specialists=case_specialists,
+            system_prompt=chosen_system_prompt,
         )
 
         if conn is not None:
