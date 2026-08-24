@@ -1,9 +1,9 @@
 import json
-import re
 
 import requests
 
 from engine.evaluators.models import EvalScore
+from engine.json_parsing import parse_json_object
 from engine.models import EvaluationCase
 from engine.runner import RunResult
 
@@ -33,14 +33,9 @@ Responda APENAS com um JSON no formato exato:
 """
 
 
-def _parse_judge_json(raw: str) -> dict:
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", raw, re.DOTALL)
-        if not match:
-            raise
-        return json.loads(match.group(0))
+# Kept as a thin alias for existing callers/tests — the actual parser moved
+# to engine.json_parsing so engine/multi_agent/router.py can reuse it too.
+_parse_judge_json = parse_json_object
 
 
 def evaluate_answer_llm_judge(

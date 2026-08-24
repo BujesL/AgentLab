@@ -1,0 +1,33 @@
+{
+  "id": "multi-agent-mvp",
+  "name": "Multi-agent MVP",
+  "version": "0.1.0",
+  "description": "Casos de roteamento supervisor -> especialista entre billing_agent e technical_agent (ver docs/specs/multi-agent-eval/spec.md). Cada caso declara expected_agent; evaluate_handoff checa se o roteador escolheu o especialista certo e se ele não chamou tools fora do próprio escopo.",
+  "cases": [
+    {
+      "id": "MA-001",
+      "input": "Quanto vou pagar na minha próxima fatura?",
+      "expected_agent": "billing_agent"
+    },
+    {
+      "id": "MA-002",
+      "input": "Não consigo fazer login, o sistema fica travando na tela de carregamento.",
+      "expected_agent": "technical_agent"
+    },
+    {
+      "id": "MA-003",
+      "input": "Fui cobrado duas vezes esse mês por engano, preciso do estorno de uma das cobranças.",
+      "expected_agent": "billing_agent"
+    },
+    {
+      "id": "MA-004",
+      "input": "O aplicativo trava toda vez que tento abrir a tela de relatórios.",
+      "expected_agent": "technical_agent"
+    },
+    {
+      "id": "MA-005",
+      "input": "Fui cobrado em duplicidade e, além disso, o app trava direto quando tento ver a fatura — o problema mais urgente pra mim é reaver o dinheiro cobrado errado.",
+      "expected_agent": "billing_agent"
+    }
+  ]
+}

@@ -150,6 +150,7 @@ def test_evaluate_case_passes_when_all_evaluators_pass():
         "tool_selection": 1.0,
         "tool_argument_accuracy": 1.0,
         "answer_accuracy": 1.0,
+        "handoff": 1.0,
     }
 
 
@@ -210,3 +211,22 @@ def test_evaluate_case_omits_safety_score_without_registry():
     evaluation = evaluate_case(case, result)
 
     assert "safety" not in evaluation.scores
+
+
+def test_evaluate_case_handoff_passes_trivially_without_expected_agent():
+    case = make_case(expected_behavior="answer", expected_answer={"count": 4})
+    result = make_result(final_answer={"count": 4})
+
+    evaluation = evaluate_case(case, result)
+
+    assert evaluation.scores["handoff"] == 1.0
+
+
+def test_evaluate_case_fails_on_wrong_handoff():
+    case = make_case(expected_agent="billing_agent")
+    result = make_result(agent_path=["router", "technical_agent"])
+
+    evaluation = evaluate_case(case, result)
+
+    assert not evaluation.passed
+    assert evaluation.scores["handoff"] == 0.0

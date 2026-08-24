@@ -15,6 +15,7 @@ TraceEventType = Literal[
     "tool_result",
     "final_answer",
     "blocked_pending_approval",
+    "handoff",
 ]
 
 

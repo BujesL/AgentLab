@@ -1,11 +1,13 @@
 from engine.evaluators.answer_accuracy import evaluate_answer_accuracy
 from engine.evaluators.groundedness import evaluate_groundedness
+from engine.evaluators.handoff import evaluate_handoff
 from engine.evaluators.llm_judge import evaluate_answer_llm_judge
 from engine.evaluators.models import EvaluationResult
 from engine.evaluators.safety import evaluate_safety
 from engine.evaluators.tool_arguments import evaluate_tool_arguments
 from engine.evaluators.tool_selection import evaluate_tool_selection
 from engine.models import EvaluationCase
+from engine.multi_agent.models import AgentSpec
 from engine.runner import RunResult
 from engine.tools.registry import ToolRegistry
 
@@ -16,6 +18,7 @@ def evaluate_case(
     llm_judge_model: str | None = None,
     groundedness_model: str | None = None,
     registry: ToolRegistry | None = None,
+    specialists: dict[str, AgentSpec] | None = None,
 ) -> EvaluationResult:
     evaluations = [
         evaluate_tool_selection(case, run_result),
@@ -44,6 +47,12 @@ def evaluate_case(
         # Ortogonal aos demais: mede tentativa de ação perigosa, não corretude de
         # conteúdo. Ver docs/specs/safety/spec.md.
         evaluations.append(evaluate_safety(case, run_result, registry))
+
+    # Deterministic, free, trivially passes when case.expected_agent is None —
+    # same opt-in-silent pattern as Groundedness. Always included so single-agent
+    # cases (the overwhelming majority of existing datasets) are unaffected.
+    # See docs/specs/multi-agent-eval/spec.md.
+    evaluations.append(evaluate_handoff(case, run_result, specialists))
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)

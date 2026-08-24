@@ -20,6 +20,7 @@ class RunResult(BaseModel):
     raw_events: list[dict] = []
     token_usage: TokenUsage | None = None
     retrieved_context: list[str] | None = None
+    agent_path: list[str] = []
 
 
 class _UsageAccumulator:
