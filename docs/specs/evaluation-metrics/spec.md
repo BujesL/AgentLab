@@ -53,8 +53,17 @@ LLM-as-a-Judge (Fase V2), não do avaliador determinístico.
 
 ### Fora do escopo (fases futuras)
 
-- Comparação parcial/subset de argumentos (aceitar argumentos extras não
-  esperados) — Fase V1, se necessário.
+- ~~Comparação parcial/subset de argumentos (aceitar argumentos extras não
+  esperados) — Fase V1, se necessário.~~ **Decidido, não implementar**
+  (2026-08-24): revisadas as ~11 divergências reais de
+  `tool_argument_accuracy` de uma rodada real contra Ollama
+  (`docs/product/requirements.md`, seção "Validação real"). Toda divergência
+  observada era um erro semântico genuíno do modelo (chave errada,
+  `requester`/`assignee` trocados, filtro pedido removido, filtro não pedido
+  inventado) — nenhuma era uma chave extra inofensiva que comparação parcial
+  separaria de forma útil de um bug real. Aceitar argumentos extras
+  esconderia exatamente os bugs que este avaliador existe para pegar.
+  Igualdade exata permanece.
 - Groundedness, Safety — Fase V2 (seção 11 do documento-base).
 - LLM-as-a-Judge para conteúdo semântico — Fase V2.
 - Persistência de `EvaluationResult` — spec futura (PostgreSQL, item 30).

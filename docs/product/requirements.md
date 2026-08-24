@@ -67,29 +67,46 @@ mais o SD-007 original). Validado via `agentlab evaluate --provider mock`:
 `tests/unit/test_cli.py` onde `blocked_pending_approval` não satisfaz
 `expected_behavior="clarify"` — mantido de propósito, não é um bug).
 
-**Validação real contra Ollama (qwen2.5:7b, `--llm-judge`)**: `69/100`
-(`Avg Latency: 17.4s`). Não foi "consertado" reescrevendo os casos pra
-combinar com esta rodada específica — mesmo princípio de
-`docs/specs/multi-agent-eval/tasks.md` (dataset overfitting não é avaliação
-de verdade). Divergências reais observadas, todas da mesma classe já
-documentada em `docs/specs/ollama-provider/tasks.md`/`docs/specs/llm-judge/tasks.md`
-("dataset desenhado para `MockProviderAdapter` roteirizado, não para
-providers reais decidindo autonomamente"):
-- ~15 casos: o modelo respondeu em texto livre (pediu mais informação, ou
-  recusou verbalmente) em vez de tentar chamar `update_ticket` como o mock
-  roteirizado assume — arguavelmente um comportamento *mais seguro*, não um
-  bug do agente.
-- ~11 casos: `tool_argument_accuracy` reprovou por diferença real de
-  interpretação de filtro (`assignee` em vez de `requester`, `this_week` em
-  vez de `last_week`, campos extras não pedidos) — a mesma fragilidade de
-  igualdade exata já conhecida (`evaluation-metrics/spec.md`, "Fora do
-  escopo: comparação parcial/subset").
-- 2 casos (SD-093/095, corrigido): o modelo tentou uma chamada exploratória
-  de `get_tickets` antes de pedir esclarecimento — mesmo padrão já aceito no
-  SD-009 original, só que os casos novos assumiram `expected_tools: []` de
-  forma mais rígida do que deveriam. Ajustado `expected_tools` para
-  `["get_tickets"]` (mesma convenção do SD-009, não invenção nova) e
-  revalidado: `2/2 (100%)`.
+**Validação real contra Ollama (qwen2.5:7b, `--llm-judge`), primeira
+tentativa — resultado descartado**: `69/100`. Achado sobre o processo, não
+sobre o agente: essa rodada rodou **sem `--prompt-file`** (esquecimento
+meu), então o `OllamaProviderAdapter` não tinha nenhuma instrução de
+vocabulário — o `system_prompt.md` do dataset (que já cobre explicitamente
+`requester` vs `assignee`, "essa semana" vs `last_week`, etc.) nunca foi
+carregado. A convenção estabelecida do projeto sempre passa `--prompt-file`
+em validações reais (ver `docs/specs/ollama-provider/tasks.md`,
+`docs/specs/prompt-versioning/tasks.md`). Os 2 casos (SD-093/095, corrigido):
+o modelo tentou uma chamada exploratória de `get_tickets` antes de pedir
+esclarecimento — mesmo padrão já aceito no SD-009 original, só que os casos
+novos assumiram `expected_tools: []` de forma mais rígida do que deveriam.
+Ajustado `expected_tools` para `["get_tickets"]` (mesma convenção do SD-009)
+e revalidado: `2/2 (100%)` — esse ajuste continua válido independente do
+esquecimento do `--prompt-file` acima.
+
+**Validação real corrigida** (`--prompt-file
+datasets/service-desk-mvp/system_prompt.md`): `67/75 (89.3%)` — a rodada
+parou em SD-076 por um `ReadTimeoutError` de rede contra o Ollama local (não
+um bug do projeto), mas os 75 primeiros casos já são evidência decisiva.
+Divergências reais restantes, todas genuínas (nenhuma é dataset overfitting
+nem chave-extra-inofensiva):
+- SD-016, SD-033: o modelo adicionou `requester="me"` que o usuário não
+  pediu (viés real do modelo em direção a esse filtro, mesmo já correto em
+  outros casos).
+- SD-026: confundiu `assignee`/`requester` de forma contraditória (colocou
+  `requester="me"` E `assignee="unassigned"` para "atribuídos a mim").
+- SD-034: dropou o único filtro pedido (`status="open"`), retornando o
+  total geral.
+- SD-057/058/059/060: os 4 casos de filtro fora do enum — o modelo preferiu
+  agir/responder em vez de pedir esclarecimento, uma escolha de
+  comportamento genuína e debatível, não um problema de argumentos.
+
+**Decisão sobre comparação parcial de argumentos** (débito listado em
+`evaluation-metrics/spec.md`): **não implementar**. As 4 divergências reais
+de `tool_argument_accuracy` acima (SD-016/026/033/034) são todas erros
+semânticos genuínos — chave errada, filtro inventado, filtro removido.
+Nenhuma seria "chave extra inofensiva". Comparação parcial esconderia
+exatamente os bugs que este avaliador existe para detectar. Ver decisão
+registrada em `docs/specs/evaluation-metrics/spec.md`.
 
 **Achado real de bug, corrigido** (não é limitação de dataset, é bug de
 engine): 4 casos (SD-038/044/046/054) reprovaram no `--llm-judge` com
