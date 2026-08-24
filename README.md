@@ -1,160 +1,131 @@
-# Agent Evaluation Lab
+# AgentLab - Ainda em desenvolvimento
 
-[![CI](https://github.com/BujesL/AgentLab/actions/workflows/ci.yml/badge.svg)](https://github.com/BujesL/AgentLab/actions/workflows/ci.yml)
-
-**"Esse agente de IA realmente funciona?"** — não como opinião, como resultado
-reproduzível de teste.
-
-Uma plataforma de engenharia pra avaliar agentes de IA do jeito que se avalia
-software: suites de teste versionadas, execução determinística sempre que
-possível, LLM-as-a-Judge só quando a métrica é genuinamente semântica, trace
-completo de cada execução (tool calls, argumentos, tokens, custo, latência) e
-detecção automática de regressão entre versões.
+**Motor de engenharia para avaliar agentes de IA de forma sistemática e reproduzível** — tool calling, groundedness, safety, custo, latência e regressão entre versões, com quality gates que bloqueiam automaticamente um agente que piorou.
 
 ```
 Evaluation Case → Agent Runner → Trace → Evaluation Engine → Metrics → Experiment → Quality Gate
 ```
 
-## Por que isso existe
+## O problema
 
-Testar um agente de IA manualmente — mandar algumas mensagens, olhar se a
-resposta "parece boa" — não pega o que realmente importa: o agente chamou a
-ferramenta certa? Com os argumentos certos? Ele tentou uma ação perigosa e só
-não teve efeito porque o sistema bloqueou? A versão nova regrediu em algum
-caso que a antiga passava? Nada disso aparece só lendo texto.
+Não existe uma forma sistemática de responder "esse agente de IA realmente funciona?". Observação manual de respostas não captura seleção de ferramentas, argumentos passados, custo, latência ou regressões entre uma versão de prompt e a próxima. O AgentLab resolve isso com **avaliadores determinísticos como primeira escolha** — comparação exata de tool calls, argumentos e respostas objetivas — e LLM-as-a-Judge reservado para critérios genuinamente semânticos (groundedness, qualidade de resposta livre), nunca como substituto do determinismo quando ele é possível.
 
-Este projeto assume que determinismo vem antes de "perguntar pra outra IA se
-passou" — e só recorre a LLM-as-a-Judge quando o critério é de fato semântico
-(o conteúdo de uma resposta livre está correto? é fundamentado no contexto?).
+## O que este projeto não é
 
-## O que já roda de verdade
-
-- **100 casos de teste** (`datasets/service-desk-mvp`) cobrindo consultas
-  informacionais, tool calling, argumentos incorretos, ações que exigem
-  aprovação humana, prompt injection, solicitações proibidas, casos ambíguos
-  e pedidos com dados insuficientes — validado tanto com um provider mockado
-  determinístico quanto com um modelo real local (Ollama).
-- **7 avaliadores**, a maioria determinística e sem custo:
-  `tool_selection`, `tool_argument_accuracy`, `answer_accuracy`, `safety` e
-  `handoff` (roteamento multi-agente) rodam sem chamada de rede; `llm_judge`
-  e `groundedness` são LLM-as-a-Judge opt-in.
-- **RAG de verdade**: chunking, embeddings via `nomic-embed-text` (Ollama
-  local) e retrieval por similaridade em Postgres/pgvector, integrado
-  automaticamente no runner.
-- **Multi-agent evaluation**: roteamento supervisor → especialista, com
-  avaliação de "chegou no agente certo" e detecção de vazamento de escopo
-  entre especialistas.
-- **Regression testing + Quality Gates**: compara duas execuções pelo mesmo
-  dataset e bloqueia (`exit 1`) uma versão que regrediu ou não bate a política
-  configurada.
-- **Dashboard web + API HTTP** pra visualizar experiments, traces e comparar
-  execuções lado a lado.
-
-## Como um agente é avaliado
-
-```
-                                    ┌──────────────────┐
-   datasets/*.json  ───────────────▶│        CLI        │
-                                    │    agentlab       │
-                                    └────────┬──────────┘
-                                             │
-                    ┌────────────────────────┼────────────────────────┐
-                    ▼                        ▼                        ▼
-            Tool Registry           Provider Adapter            RAG Retriever
-           (mock only, nunca      (Mock / Ollama / seu       (pgvector, opcional,
-            executa de verdade)     próprio adapter)           --rag)
-                    │                        │                        │
-                    └────────────────────────┼────────────────────────┘
-                                             ▼
-                                      ┌─────────────┐
-                                      │ AgentRunner │  ── até 5 iterações de
-                                      └──────┬──────┘     tool-call / resposta
-                                             ▼
-                                RunResult → Trace (sem chain-of-thought)
-                                             ▼
-                                    Evaluation Engine
-                          (soma os 7 avaliadores acima, aditivo)
-                                             ▼
-                              EvaluationResult → Postgres → Dashboard
-```
-
-## Quickstart
-
-```bash
-# 1. instalar dependências do engine
-cd engine && pip install -r requirements.txt
-
-# 2. rodar a suite completa contra um provider mockado (determinístico, sem rede)
-agentlab evaluate datasets/service-desk-mvp/dataset.json \
-  --scripts datasets/service-desk-mvp/scripts.json --no-persist
-
-# 3. rodar contra um modelo real local via Ollama
-agentlab evaluate datasets/service-desk-mvp/dataset.json \
-  --provider ollama --model qwen2.5:7b \
-  --prompt-file datasets/service-desk-mvp/system_prompt.md \
-  --llm-judge --no-persist
-
-# 4. avaliar um cenário multi-agente (roteamento supervisor → especialista)
-agentlab evaluate-multi-agent datasets/multi-agent-mvp/dataset.json \
-  --specialists datasets/multi-agent-mvp/specialists.json \
-  --provider ollama --model qwen2.5:7b --router llm --llm-judge --no-persist
-```
-
-Ver `docs/specs/cli/spec.md` para a referência completa de comandos
-(`dataset validate`, `rag ingest`, `trace show`, `regression run`,
-`quality-gate`).
+- Não é um dashboard de notas — é um motor de avaliação com trace completo de execução.
+- Não depende de um único provedor de LLM: o núcleo do runner nunca importa um provider específico (`ProviderAdapter` é a única interface que ele conhece).
+- Não usa LLM como juiz de tudo — determinismo tem prioridade sempre que o critério permite.
+- Não expõe chain-of-thought privado nos traces: `build_trace()` rejeita recursivamente qualquer chave de payload chamada `reasoning`, `thought` ou `chain_of_thought`.
+- Não executa ferramentas reais durante avaliação: `ToolRegistry.execute_mocked()` é o único caminho de execução no MVP — nenhum efeito colateral real acontece numa suite de testes.
 
 ## Metodologia
 
-Spec-driven: nenhuma feature relevante entra sem spec + plano prévios.
+Spec-Driven Development / OpenSpec de ponta a ponta — nenhuma feature relevante entra sem spec e contrato prévios:
 
 ```
-Requirement → Spec → Plan → Contracts → Tasks → Implementation → Tests → Evaluation real → Review
+Requirement → Spec → Plan → Contracts → Tasks → Implementation → Tests → Evaluation → Review
 ```
 
-Cada `docs/specs/<área>/` tem `spec.md` (o quê e por quê), `plan.md` (como) e
-`tasks.md` (o que foi feito de fato — incluindo achados reais de validação
-contra modelos de verdade, não só testes unitários). Decisões arquiteturais
-maiores viram ADR em `docs/architecture/decisions/`.
+18 specs completas em `docs/specs/` (evaluation engine, evaluation metrics, agent runner, quality gates, regression, multi-agent, RAG pipeline, safety, groundedness, LLM-as-a-judge, prompt versioning, token/cost tracking, traces, API, CLI, CI/CD, web dashboard, Ollama provider), cada uma com `spec.md` + `plan.md` + `tasks.md`, e contratos JSON Schema versionados onde a interface importa (`docs/specs/*/contracts/`).
 
-## Roadmap
+Toda decisão de arquitetura relevante é registrada como ADR em `docs/architecture/decisions/` — incluindo decisões que corrigiram o próprio plano original (ex.: ADR-005 documenta a troca de Postgres via Docker local para Neon gerenciado, depois que o Docker Desktop falhou por falta de suporte a virtualização aninhada na máquina de desenvolvimento; ADR-006 documenta uma correção de isolamento de testes de integração depois que um `TRUNCATE` cego numa suite quase apagou dados de demonstração do Dashboard). Essas correções ficam documentadas como decisão, não escondidas.
 
-| Fase | Status | Conteúdo |
+## Como o motor decide se um agente "passou"
+
+O `Evaluation Engine` roda um conjunto de avaliadores independentes por caso:
+
+| Avaliador | Tipo | O que mede |
 |---|---|---|
-| MVP | ✅ | Dataset, Agent Runner, Trace, avaliadores determinísticos, CLI |
-| V1 | ✅ | API HTTP (Fastify) + Dashboard (Next.js) |
-| V1.5 | ✅ | Prompt versioning, regression testing, quality gates, CI |
-| V2 | ✅ | LLM-as-a-Judge, Groundedness, RAG pipeline real, Safety evaluator |
-| V3 | 🚧 | Multi-agent evaluation (engine + CLI prontos); segurança avançada em aberto |
-| V4 | ⏳ | Deployment cloud/self-hosted |
+| `answer_accuracy` | Determinístico | Resposta objetiva bate com o esperado |
+| `tool_selection` | Determinístico | O conjunto de ferramentas chamadas é exatamente o esperado |
+| `tool_argument_accuracy` | Determinístico | Os argumentos passados batem com o schema/valor esperado |
+| `safety` | Determinístico | Reprova qualquer *tentativa* de chamar uma ferramenta de risco alto — mesmo que o gate de aprovação (ADR-003) tenha bloqueado a execução |
+| `handoff` | Determinístico | Em cenários multi-agente, se o router encaminhou para o especialista certo |
+| `groundedness` | LLM-as-a-Judge | Se a resposta de um agente RAG está inteiramente fundamentada no contexto recuperado |
+| `llm_judge` | LLM-as-a-Judge | Julgamento semântico de qualidade quando não há resposta objetiva comparável |
 
-Ver `docs/product/requirements.md` (roadmap detalhado) e
-`docs/product/vision.md` (visão e não-objetivos).
+Um `quality-gate` então aplica uma política declarativa (`quality-gates/default.json`) sobre o resumo agregado do experimento — por exemplo, `accuracy_pct >= 90`, `tool_selection_pct >= 95`, `regression_delta >= -3` — e retorna PASS/FAIL, pronto para travar um merge em CI.
+
+## Validação real, não só teórica
+
+O dataset MVP (`datasets/service-desk-mvp/`, 100 casos: consultas informacionais, chamadas de ferramenta, argumentos incorretos, casos que exigem aprovação, prompt injection, solicitações proibidas, casos ambíguos) foi rodado contra dois providers bem diferentes, e o resultado de cada um está documentado sem maquiagem em `docs/product/requirements.md`:
+
+- **`--provider mock`**: 99/100 — o único caso que não passa é intencional e está documentado em `tests/unit/test_cli.py`, não é um bug escondido.
+- **`--provider ollama` (qwen2.5:7b) + `--llm-judge`**: 69/100 numa primeira rodada real, contra um modelo decidindo de forma autônoma (não roteirizado como o mock). As divergências foram analisadas caso a caso — algumas eram o modelo sendo *mais cauteloso* que o script assumia, não um defeito; outras eram fragilidade conhecida de comparação exata de argumentos (já registrada como limitação em `docs/specs/evaluation-metrics/spec.md`). Um bug real do motor (o `--llm-judge` sobrescrevendo o sinal de bloqueio de aprovação com "resposta vazia") foi encontrado, corrigido em `engine/evaluators/llm_judge.py`, coberto por um teste novo (`test_llm_judge_blocked_approval.py`) e revalidado nos 4 casos afetados: 4/4.
+
+Esse é o tipo de honestidade que o próprio motor foi desenhado para forçar: overfitar o dataset para "passar" não é avaliação — é o oposto do que o `docs/specs/multi-agent-eval/tasks.md` chama explicitamente de anti-padrão.
 
 ## Estrutura
 
 ```
-agent-evaluation-lab/
-├── engine/            # Evaluation Engine (Python): runner, evaluators, RAG,
-│                      # multi_agent, providers, persistence, CLI
+AgentLab/
+├── engine/              # Evaluation Engine (Python) — CLI, runner, evaluators,
+│                         #   quality gates, regressão, RAG, multi-agente, persistência
 ├── apps/
-│   ├── api/           # API HTTP (Fastify + TypeScript)
-│   └── web/           # Dashboard (Next.js + TypeScript)
-├── datasets/          # suites de evaluation cases versionadas (JSON)
+│   ├── api/             # Fastify + TypeScript — expõe experiments/traces/evaluate via HTTP
+│   └── web/             # Next.js 16 + React 19 — dashboard de resultados
+├── datasets/            # Suites de evaluation cases versionadas (service-desk, RAG, safety, multi-agent)
+├── agents/              # System prompts dos agentes avaliados
+├── quality-gates/       # Políticas declarativas (default.json)
 ├── docs/
-│   ├── product/       # vision.md, requirements.md
-│   ├── architecture/  # ADRs
-│   └── specs/         # spec.md / plan.md / tasks.md por área
-├── tests/             # unit + integration (Python) — apps/api/tests (TS)
-└── .github/workflows/ # CI
+│   ├── product/         # vision.md, requirements.md — escopo e critérios de aceite por fase
+│   ├── architecture/decisions/  # ADRs
+│   └── specs/           # spec.md + plan.md + tasks.md + contracts/ por feature
+├── tests/               # 117 testes (unit + integração), rodando contra Postgres real em CI
+└── .github/workflows/   # CI: pytest (unit + integração com Postgres em serviço), vitest da API, build do dashboard
 ```
 
 ## Stack
 
-- **Evaluation Engine**: Python (Pydantic, pytest)
-- **API**: Fastify + TypeScript
-- **Dashboard**: Next.js + TypeScript
-- **Banco**: PostgreSQL + pgvector (Neon, sem Docker — ver ADR-005)
-- **Providers suportados**: mock (testes determinísticos), Ollama (modelos
-  locais); contrato `ProviderAdapter` para plugar qualquer LLM
-- **CI**: GitHub Actions
+| Camada | Tecnologia |
+|---|---|
+| Evaluation Engine | Python 3.12 |
+| Persistência | PostgreSQL (Neon gerenciado em dev — ADR-005) |
+| API | Fastify 5 + TypeScript |
+| Dashboard | Next.js 16, React 19, Tailwind |
+| Testes | pytest (unit + integração), Vitest (API) — 117 testes Python + suíte da API |
+| CI/CD | GitHub Actions — Postgres real como serviço, não mockado |
+| Providers de LLM implementados | Mock (determinístico, scriptável via JSON) e Ollama (modelos locais, ex. `qwen2.5:7b`) |
+
+`ProviderAdapter` é a interface abstrata que desacopla o runner do provider — um adapter para Claude/OpenAI é possível de adicionar sem tocar no núcleo, mas **hoje não está implementado**; só Mock e Ollama existem no código.
+
+## Como rodar
+
+```bash
+# 1. Dependências do Evaluation Engine
+pip install -r engine/requirements.txt
+
+# 2. Validar um dataset
+python -m engine.cli dataset validate datasets/service-desk-mvp/dataset.json
+
+# 3. Rodar uma avaliação com o provider mock (determinístico, não precisa de LLM real)
+python -m engine.cli evaluate datasets/service-desk-mvp/dataset.json \
+  --provider mock --scripts datasets/service-desk-mvp/scripts.json \
+  --agent service-desk --prompt-file agents/service-desk-system-prompt.txt
+
+# 4. Rodar contra um modelo local via Ollama, com LLM-as-a-Judge
+python -m engine.cli evaluate datasets/service-desk-mvp/dataset.json \
+  --provider ollama --model qwen2.5:7b --llm-judge \
+  --agent service-desk --prompt-file agents/service-desk-system-prompt.txt
+
+# 5. Aplicar a política de quality gate sobre um experimento já rodado
+python -m engine.cli quality-gate <experiment_id> --policy quality-gates/default.json
+```
+
+```bash
+# Testes
+python -m pytest tests/unit -v
+python -m pytest tests/integration -v   # precisa de DATABASE_URL configurado
+
+# API e dashboard
+cd apps/api && npm install && npm test
+cd apps/web && npm install && npm run dev
+```
+
+## Status
+
+MVP (núcleo do Evaluation Engine) implementado e validado contra dois providers reais, com CI rodando 117 testes contra Postgres de verdade. `apps/api` e `apps/web` já têm código e testes próprios, ainda em evolução junto com as fases V1/V1.5 do roadmap (prompt versioning, regression suite automatizada em CI, RAG evaluation, multi-agent evaluation, dashboard completo). Escopo e critério de aceite de cada fase em `docs/product/requirements.md`; visão de produto e definição de sucesso em `docs/product/vision.md`.
+
+---
+
+Desenvolvido por **[Vinícius Bujes de Lima](https://github.com/BujesL)**
