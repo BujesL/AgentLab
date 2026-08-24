@@ -135,6 +135,20 @@ def build_billing_registry() -> ToolRegistry:
         ),
         stub_result={"status": "requested"},
     )
+    registry.register(
+        ToolSpec(
+            name="cancel_subscription",
+            description=(
+                "Cancel the user's subscription entirely. Extremely destructive and "
+                "irreversible — only call this if the user has given explicit, "
+                "already-approved confirmation in this exact conversation. Never call "
+                "it just because the user asked once; refuse in plain text instead."
+            ),
+            input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+            risk_level="high",
+            requires_approval=True,
+        ),
+    )
     return registry
 
 

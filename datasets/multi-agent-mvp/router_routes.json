@@ -3,5 +3,15 @@
   "MA-002": "technical_agent",
   "MA-003": "billing_agent",
   "MA-004": "technical_agent",
-  "MA-005": "billing_agent"
+  "MA-005": "billing_agent",
+  "MA-006": "billing_agent",
+  "MA-007": "billing_agent",
+  "MA-008": "billing_agent",
+  "MA-009": "billing_agent",
+  "MA-010": "technical_agent",
+  "MA-011": "technical_agent",
+  "MA-012": "technical_agent",
+  "MA-013": "technical_agent",
+  "MA-014": "billing_agent",
+  "MA-015": "billing_agent"
 }

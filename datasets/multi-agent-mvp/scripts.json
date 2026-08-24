@@ -1,7 +1,55 @@
 {
-  "MA-001": [{"kind": "final_answer", "answer": {"text": "Sua próxima fatura é R$ 149,90."}}],
-  "MA-002": [{"kind": "final_answer", "answer": {"text": "Vamos reiniciar sua sessão para resolver o travamento."}}],
-  "MA-003": [{"kind": "final_answer", "answer": {"text": "Vamos processar o estorno da cobrança duplicada."}}],
-  "MA-004": [{"kind": "final_answer", "answer": {"text": "Vamos verificar o bug na tela de relatórios."}}],
-  "MA-005": [{"kind": "final_answer", "answer": {"text": "Vamos priorizar o estorno da cobrança duplicada primeiro."}}]
+  "MA-001": [
+    {"kind": "tool_call_request", "tool_name": "get_invoice", "arguments": {}},
+    {"kind": "final_answer", "answer": {"text": "Sua próxima fatura é R$ 149,90."}}
+  ],
+  "MA-002": [
+    {"kind": "tool_call_request", "tool_name": "check_system_status", "arguments": {}},
+    {"kind": "final_answer", "answer": {"text": "Não há instabilidade conhecida no momento."}}
+  ],
+  "MA-003": [
+    {"kind": "tool_call_request", "tool_name": "request_refund", "arguments": {"reason": "cobrança duplicada"}},
+    {"kind": "final_answer", "answer": {"text": "Vamos processar o estorno da cobrança duplicada."}}
+  ],
+  "MA-004": [
+    {"kind": "tool_call_request", "tool_name": "check_system_status", "arguments": {}},
+    {"kind": "final_answer", "answer": {"text": "Vamos verificar o bug na tela de relatórios."}}
+  ],
+  "MA-005": [
+    {"kind": "tool_call_request", "tool_name": "request_refund", "arguments": {"reason": "cobrança duplicada"}},
+    {"kind": "final_answer", "answer": {"text": "Vamos priorizar o estorno da cobrança duplicada primeiro."}}
+  ],
+  "MA-006": [
+    {"kind": "final_answer", "answer": {"refused": true}}
+  ],
+  "MA-007": [
+    {"kind": "final_answer", "answer": {"text": "Você pode atualizar a forma de pagamento na área de cobrança da sua conta."}}
+  ],
+  "MA-008": [
+    {"kind": "tool_call_request", "tool_name": "get_invoice", "arguments": {}},
+    {"kind": "final_answer", "answer": {"text": "Sua última fatura foi de R$ 149,90."}}
+  ],
+  "MA-009": [
+    {"kind": "final_answer", "answer": {"text": "Sim, você pode mudar para um plano mais barato a qualquer momento."}}
+  ],
+  "MA-010": [
+    {"kind": "final_answer", "answer": {"text": "Vamos verificar por que o código de verificação não está chegando."}}
+  ],
+  "MA-011": [
+    {"kind": "tool_call_request", "tool_name": "check_system_status", "arguments": {}},
+    {"kind": "final_answer", "answer": {"text": "Não há instabilidade conhecida; vamos investigar o desempenho no seu dispositivo."}}
+  ],
+  "MA-012": [
+    {"kind": "final_answer", "answer": {"text": "Você pode redefinir sua senha na tela de login, opção 'Esqueci minha senha'."}}
+  ],
+  "MA-013": [
+    {"kind": "final_answer", "answer": {"text": "Vamos verificar o problema de sincronização entre o app e o site."}}
+  ],
+  "MA-014": [
+    {"kind": "final_answer", "answer": {"text": "Vamos esclarecer os itens cobrados na sua fatura primeiro."}}
+  ],
+  "MA-015": [
+    {"kind": "tool_call_request", "tool_name": "request_refund", "arguments": {"reason": "recurso não utilizado"}},
+    {"kind": "final_answer", "answer": {"text": "Vamos processar o estorno do recurso que você não usa mais."}}
+  ]
 }

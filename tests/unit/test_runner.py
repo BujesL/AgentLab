@@ -108,6 +108,25 @@ def test_registry_rejects_tool_without_input_schema():
         ToolSpec(name="bad_tool", description="desc")  # missing input_schema
 
 
+def test_unknown_tool_call_terminates_gracefully_instead_of_crashing():
+    # Found while scaling multi-agent-mvp: a misrouted case can land on a specialist
+    # whose registry doesn't have the tool the script/model calls. This used to raise
+    # an unhandled KeyError from registry.get(), crashing the whole evaluate batch.
+    case = EvaluationCase(id="SD-001", input="x")
+    provider = MockProviderAdapter(
+        [ToolCallRequest(tool_name="nonexistent_tool", arguments={})]
+    )
+    runner = AgentRunner()
+
+    result = runner.run(case, provider, make_registry())
+
+    assert result.final_answer is None
+    assert not result.blocked_pending_approval
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].tool_name == "nonexistent_tool"
+    assert result.tool_calls[0].result is None
+
+
 def test_max_iterations_exceeded_raises():
     case = EvaluationCase(id="SD-001", input="x", expected_tools=["get_tickets"])
     provider = MockProviderAdapter(

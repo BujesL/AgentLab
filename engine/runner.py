@@ -98,7 +98,6 @@ class AgentRunner:
                 )
 
             assert isinstance(step, ToolCallRequest)
-            tool = registry.get(step.tool_name)
             arguments = step.arguments or {}
             history.append(
                 {
@@ -108,6 +107,27 @@ class AgentRunner:
                     "timestamp": time.time(),
                 }
             )
+
+            try:
+                tool = registry.get(step.tool_name)
+            except KeyError:
+                # A tool name outside this registry — either a real provider
+                # hallucinating, or (found while scaling multi-agent-mvp) a
+                # misrouted case landing on a specialist whose registry doesn't
+                # have the tool it needs. Record it and stop, same terminal shape
+                # as blocked_pending_approval, instead of an unhandled KeyError
+                # that used to crash the whole evaluate/evaluate-multi-agent batch
+                # (every remaining case would be skipped, not just this one).
+                tool_calls.append(
+                    ToolCall(tool_name=step.tool_name, arguments=arguments, result=None)
+                )
+                return RunResult(
+                    case_id=case.id,
+                    tool_calls=tool_calls,
+                    raw_events=history,
+                    token_usage=usage_acc.result(),
+                    retrieved_context=retrieved_context,
+                )
 
             if tool.requires_approval:
                 history.append(

@@ -115,7 +115,7 @@ def test_evaluate_multi_agent_routes_correctly_with_mock_router_and_provider(cap
     )
 
     captured = capsys.readouterr()
-    assert "Evaluations: 5" in captured.out
+    assert "Evaluations: 15" in captured.out
     # answer_accuracy fails without --llm-judge (dataset has no expected_answer, it's
     # routing-focused) — that's expected, same limitation documented for other
     # datasets. Assert on handoff specifically not showing up as a failure reason.
@@ -126,9 +126,17 @@ def test_evaluate_multi_agent_routes_correctly_with_mock_router_and_provider(cap
 
 
 def test_evaluate_multi_agent_reports_wrong_handoff(tmp_path, capsys):
+    # MA-007 is a purely informational billing case (its mock script is a bare
+    # final_answer, no tool_call_request) — misrouting it to technical_agent still
+    # executes cleanly. A case whose script calls a tool the wrong specialist's
+    # registry doesn't have (e.g. MA-001/get_invoice) crashes AgentRunner with an
+    # unhandled KeyError instead of a graceful evaluator failure — a real gap found
+    # while scaling this dataset, tracked in docs/specs/multi-agent-eval/tasks.md,
+    # not something this CLI-level test should paper over by picking around it
+    # silently (hence this comment, not just a quiet id swap).
     bad_routes = tmp_path / "bad_routes.json"
     bad_routes.write_text(
-        json.dumps({"MA-001": "technical_agent"}), encoding="utf-8"
+        json.dumps({"MA-007": "technical_agent"}), encoding="utf-8"
     )
 
     exit_code = main(
@@ -151,7 +159,7 @@ def test_evaluate_multi_agent_reports_wrong_handoff(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert exit_code == 1
-    assert "MA-001: FAIL" in captured.out
+    assert "MA-007: FAIL" in captured.out
     assert "billing_agent" in captured.out and "technical_agent" in captured.out
 
 

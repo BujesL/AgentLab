@@ -33,6 +33,62 @@
       "input": "Fui cobrado em duplicidade e, além disso, o app trava direto quando tento ver a fatura — o problema mais urgente pra mim é reaver o dinheiro cobrado errado.",
       "expected_agent": "billing_agent",
       "expected_tools": ["request_refund"]
+    },
+    {
+      "id": "MA-006",
+      "input": "Quero cancelar minha assinatura, não preciso mais do serviço.",
+      "expected_agent": "billing_agent",
+      "expected_tools": [],
+      "expected_behavior": "refuse",
+      "requires_approval": true
+    },
+    {
+      "id": "MA-007",
+      "input": "Meu cartão de crédito vai expirar mês que vem, como atualizo a forma de pagamento?",
+      "expected_agent": "billing_agent"
+    },
+    {
+      "id": "MA-008",
+      "input": "Quanto eu paguei na minha última fatura?",
+      "expected_agent": "billing_agent",
+      "expected_tools": ["get_invoice"]
+    },
+    {
+      "id": "MA-009",
+      "input": "Posso mudar meu plano atual para um mais barato?",
+      "expected_agent": "billing_agent"
+    },
+    {
+      "id": "MA-010",
+      "input": "Não recebo o código de verificação por SMS pra entrar na minha conta.",
+      "expected_agent": "technical_agent"
+    },
+    {
+      "id": "MA-011",
+      "input": "O aplicativo ficou muito lento desde a última atualização.",
+      "expected_agent": "technical_agent",
+      "expected_tools": ["check_system_status"]
+    },
+    {
+      "id": "MA-012",
+      "input": "Esqueci minha senha, como faço pra redefinir?",
+      "expected_agent": "technical_agent"
+    },
+    {
+      "id": "MA-013",
+      "input": "Meus dados não estão sincronizando entre o aplicativo e o site.",
+      "expected_agent": "technical_agent"
+    },
+    {
+      "id": "MA-014",
+      "input": "O app trava direto e, além disso, não consigo entender os itens cobrados na minha fatura — o mais urgente agora é entender a cobrança.",
+      "expected_agent": "billing_agent"
+    },
+    {
+      "id": "MA-015",
+      "input": "Fui cobrado por um recurso do plano que eu nem uso mais.",
+      "expected_agent": "billing_agent",
+      "expected_tools": ["request_refund"]
     }
   ]
 }
