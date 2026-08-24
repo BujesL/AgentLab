@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { fetchExperiments, fetchExperimentSummary, fetchQualityGate, type Experiment } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -139,6 +140,12 @@ export default async function DashboardPage() {
                     >
                       {passed === null ? "?" : passed ? "PASS" : "FAIL"}
                     </span>
+                    <Link
+                      href={`/experiments/${exp.id}/traces`}
+                      className="text-xs text-white/40 hover:text-white/70"
+                    >
+                      traces →
+                    </Link>
                   </div>
                 </div>
                 {v2Scores.length > 0 && (

@@ -104,16 +104,28 @@ foi "consertado" reescrevendo o caso para combinar com a frase exata que o
 modelo prefere, o que seria dataset overfitting ao invés de avaliação de
 verdade.
 
-## Fora desta rodada
+## T11 — Experiment/--agent + UI dedicada para handoff (2026-08-24)
 
-- Integração com `Experiment`/`--agent`/`--agent-version` no
-  `evaluate-multi-agent` — o subcomando persiste `Trace`/`EvaluationResult`
-  soltos, sem vincular a um agent_version. Adicionar depois se/quando fizer
-  sentido comparar experimentos multi-agente (regression/quality-gate).
-- `--groundedness`/`--rag` no `evaluate-multi-agent` — não pedido, não
-  implementado; adicionar seguindo o mesmo padrão de `--llm-judge` quando
-  houver um dataset multi-agente com `context`.
-- Dashboard/API não sabem exibir `agent_path`/evento `handoff` de forma
-  especial — hoje aparecem genericamente como mais um evento de trace
-  (`trace show` já imprime qualquer `TraceEventType` sem tratamento
-  especial, então funciona, só não tem UI dedicada).
+- [x] `evaluate-multi-agent` ganhou `--agent`/`--agent-version`, mesmo padrão
+  de `handle_evaluate` (sem `prompt_version_id` — um experimento multi-agente
+  cobre N especialistas, cada um com seu próprio `prompt_file`, não há um
+  único system prompt pra hashear). Validado de verdade contra Postgres real
+  (não só `--no-persist`): `Experiment` criado, 5 traces e 5
+  evaluation_results vinculados via `experiment_id` — confirmado por query
+  direta.
+- [x] API: `GET /experiments/:id/traces` (join `trace`/`evaluation_result`
+  via `trace_id`, não por `case_id` — evita ambiguidade). Testado contra
+  Postgres real (`apps/api/tests/experiments.test.ts`, 4º teste da suíte).
+- [x] Web: `/experiments/[id]/traces` (lista) e `/traces/[id]` (detalhe) —
+  novo, não existia nenhuma página de trace no dashboard antes disso. O
+  evento `handoff` ganha layout dedicado (pill `from → to`, vermelho quando
+  o roteador não encontrou o especialista), outros tipos de evento
+  continuam genéricos (JSON bruto). Dashboard ganhou link "traces →" por
+  experimento. Testado de ponta a ponta rodando os dois dev servers de
+  verdade + uma consulta multi-agente real persistida no Postgres — HTML
+  confirmado contendo `HANDOFF`, `router`, `billing_agent`.
+- Fora de escopo ainda: `--groundedness`/`--rag` no `evaluate-multi-agent`
+  (sem dataset multi-agente com `context` pra justificar); testes E2E
+  automatizados do dashboard (mesmo débito já registrado em
+  `docs/specs/web-dashboard/tasks.md` — validado rodando de verdade, não
+  por Vitest/RTL).

@@ -113,6 +113,8 @@ def build_parser() -> argparse.ArgumentParser:
     multi_agent_parser.add_argument(
         "--judge-model", help="Ollama model for --llm-judge (defaults to --model)"
     )
+    multi_agent_parser.add_argument("--agent", help="agent name; creates an Experiment when set")
+    multi_agent_parser.add_argument("--agent-version", default="0.1.0")
     multi_agent_parser.add_argument("--no-persist", action="store_true")
     multi_agent_parser.set_defaults(handler=handle_evaluate_multi_agent)
 
@@ -314,6 +316,17 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
         else:
             print("aviso: DATABASE_URL não definida, pulando persistência")
 
+    experiment_id = None
+    if conn is not None and args.agent:
+        # No prompt_version_id here: a multi-agent Experiment covers N specialists,
+        # each with its own prompt_file (see --specialists config) — there is no
+        # single system prompt to hash the way handle_evaluate does for one agent.
+        agent = get_or_create_agent(conn, args.agent)
+        agent_version = get_or_create_agent_version(conn, agent.id, args.agent_version)
+        experiment = create_experiment(conn, agent_version.id, dataset.id, args.model)
+        experiment_id = experiment.id
+        print(f"experiment: {experiment_id}")
+
     # Ollama providers/registries are stateless — build them once and reuse across
     # cases. MockProviderAdapter is scripted per case, so mock specialists are
     # rebuilt fresh per case below (same pattern as handle_evaluate).
@@ -350,7 +363,7 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
             case_specialists = ollama_specialists
 
         run_result = MultiAgentRunner().run(case, router, case_specialists)
-        trace = build_trace(run_result, model=args.model)
+        trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
 
         chosen_agent = run_result.agent_path[-1] if len(run_result.agent_path) > 1 else None
         chosen_registry = (
@@ -369,7 +382,9 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
 
         if conn is not None:
             save_trace(conn, trace)
-            save_evaluation_result(conn, evaluation, trace_id=trace.id, experiment_id=None)
+            save_evaluation_result(
+                conn, evaluation, trace_id=trace.id, experiment_id=experiment_id
+            )
 
         entries.append((case.id, evaluation, trace))
         status = "PASS" if evaluation.passed else "FAIL"

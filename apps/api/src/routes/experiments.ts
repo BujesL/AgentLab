@@ -58,4 +58,25 @@ export async function experimentsRoutes(app: FastifyInstance, opts: { pool: Pool
       metric_scores: metricScores,
     };
   });
+
+  app.get<{ Params: { id: string } }>("/experiments/:id/traces", async (request) => {
+    const { id } = request.params;
+
+    const result = await pool.query(
+      "SELECT t.id, t.case_id, t.duration_ms, t.cost, er.passed " +
+        "FROM trace t " +
+        "LEFT JOIN evaluation_result er ON er.trace_id = t.id " +
+        "WHERE t.experiment_id = $1 " +
+        "ORDER BY t.case_id ASC",
+      [id]
+    );
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      case_id: row.case_id,
+      duration_ms: Number(row.duration_ms),
+      cost: row.cost !== null ? Number(row.cost) : null,
+      passed: row.passed as boolean | null,
+    }));
+  });
 }

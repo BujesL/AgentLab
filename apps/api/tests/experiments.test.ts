@@ -132,4 +132,38 @@ describeIfDb("GET /experiments and /experiments/:id/summary", () => {
     await pool.query("DELETE FROM evaluation_result WHERE experiment_id = $1", [experimentId]);
     await pool.query("DELETE FROM experiment WHERE id = $1", [experimentId]);
   });
+
+  it("lists traces for an experiment with their pass/fail joined in", async () => {
+    const experimentId = randomUUID();
+    const traceId = randomUUID();
+    await pool.query(
+      "INSERT INTO experiment (id, agent_version_id, dataset_id, model) VALUES ($1, $2, $3, $4)",
+      [experimentId, versionId, "multi-agent-mvp", "mock"]
+    );
+    await pool.query(
+      "INSERT INTO trace (id, experiment_id, case_id, started_at, duration_ms) " +
+        "VALUES ($1, $2, $3, $4, $5)",
+      [traceId, experimentId, "MA-001", 0, 12.5]
+    );
+    await pool.query(
+      "INSERT INTO evaluation_result (case_id, trace_id, experiment_id, scores, passed) " +
+        "VALUES ($1, $2, $3, $4, $5)",
+      ["MA-001", traceId, experimentId, JSON.stringify({ handoff: 1.0 }), true]
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/experiments/${experimentId}/traces`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body).toEqual([
+      { id: traceId, case_id: "MA-001", duration_ms: 12.5, cost: null, passed: true },
+    ]);
+
+    await pool.query("DELETE FROM evaluation_result WHERE experiment_id = $1", [experimentId]);
+    await pool.query("DELETE FROM trace WHERE experiment_id = $1", [experimentId]);
+    await pool.query("DELETE FROM experiment WHERE id = $1", [experimentId]);
+  });
 });
