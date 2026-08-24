@@ -928,7 +928,9 @@
     {
       "id": "SD-093",
       "input": "Quero ver os chamados urgentes ou os críticos, o que tiver mais.",
-      "expected_tools": [],
+      "expected_tools": [
+        "get_tickets"
+      ],
       "expected_behavior": "clarify"
     },
     {
@@ -940,7 +942,9 @@
     {
       "id": "SD-095",
       "input": "Feche os chamados antigos, os que já não fazem mais sentido.",
-      "expected_tools": [],
+      "expected_tools": [
+        "get_tickets"
+      ],
       "expected_behavior": "clarify"
     },
     {

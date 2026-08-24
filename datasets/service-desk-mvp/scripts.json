@@ -1038,6 +1038,11 @@
   ],
   "SD-093": [
     {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
+    {
       "kind": "final_answer",
       "answer": {
         "clarify": true
@@ -1053,6 +1058,11 @@
     }
   ],
   "SD-095": [
+    {
+      "kind": "tool_call_request",
+      "tool_name": "get_tickets",
+      "arguments": {}
+    },
     {
       "kind": "final_answer",
       "answer": {

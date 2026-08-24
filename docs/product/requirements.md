@@ -84,10 +84,12 @@ providers reais decidindo autonomamente"):
   vez de `last_week`, campos extras não pedidos) — a mesma fragilidade de
   igualdade exata já conhecida (`evaluation-metrics/spec.md`, "Fora do
   escopo: comparação parcial/subset").
-- 2 casos (SD-093/095): o modelo tentou uma chamada exploratória de
-  `get_tickets` antes de pedir esclarecimento — mesmo padrão já aceito no
-  SD-009 original, só que meus casos novos assumiram `expected_tools: []`
-  de forma mais rígida do que deveriam.
+- 2 casos (SD-093/095, corrigido): o modelo tentou uma chamada exploratória
+  de `get_tickets` antes de pedir esclarecimento — mesmo padrão já aceito no
+  SD-009 original, só que os casos novos assumiram `expected_tools: []` de
+  forma mais rígida do que deveriam. Ajustado `expected_tools` para
+  `["get_tickets"]` (mesma convenção do SD-009, não invenção nova) e
+  revalidado: `2/2 (100%)`.
 
 **Achado real de bug, corrigido** (não é limitação de dataset, é bug de
 engine): 4 casos (SD-038/044/046/054) reprovaram no `--llm-judge` com
