@@ -113,6 +113,21 @@ def build_parser() -> argparse.ArgumentParser:
     multi_agent_parser.add_argument(
         "--judge-model", help="Ollama model for --llm-judge (defaults to --model)"
     )
+    multi_agent_parser.add_argument(
+        "--groundedness",
+        action="store_true",
+        help="also score groundedness (needs case.context) via LLM-as-a-Judge",
+    )
+    multi_agent_parser.add_argument(
+        "--groundedness-model", help="Ollama model for --groundedness (defaults to --model)"
+    )
+    multi_agent_parser.add_argument(
+        "--rag",
+        action="store_true",
+        help="retrieve context automatically from document_chunk before answering "
+        "(requires DATABASE_URL; ignored for cases with a manually authored context)",
+    )
+    multi_agent_parser.add_argument("--rag-top-k", type=int, default=3)
     multi_agent_parser.add_argument("--agent", help="agent name; creates an Experiment when set")
     multi_agent_parser.add_argument("--agent-version", default="0.1.0")
     multi_agent_parser.add_argument("--no-persist", action="store_true")
@@ -317,6 +332,17 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
         else:
             print("aviso: DATABASE_URL não definida, pulando persistência")
 
+    retriever = None
+    if args.rag:
+        # Same pattern as handle_evaluate: document_chunk lives in Postgres regardless
+        # of --no-persist, so reuse `conn` when already open, otherwise open a
+        # dedicated one just for retrieval.
+        if "DATABASE_URL" not in os.environ:
+            print("erro: --rag exige DATABASE_URL")
+            return 1
+        rag_conn = conn if conn is not None else get_connection()
+        retriever = PgVectorRetriever(rag_conn)
+
     experiment_id = None
     if conn is not None and args.agent:
         # No prompt_version_id here: a multi-agent Experiment covers N specialists,
@@ -364,7 +390,7 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
         else:
             case_specialists = ollama_specialists
 
-        run_result = MultiAgentRunner().run(case, router, case_specialists)
+        run_result = MultiAgentRunner().run(case, router, case_specialists, retriever=retriever)
         trace = build_trace(run_result, model=args.model, experiment_id=experiment_id)
 
         chosen_agent = run_result.agent_path[-1] if len(run_result.agent_path) > 1 else None
@@ -374,6 +400,9 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
             else None
         )
         judge_model = (args.judge_model or args.model) if args.llm_judge else None
+        groundedness_model = (
+            (args.groundedness_model or args.model) if args.groundedness else None
+        )
         chosen_system_prompt = (
             case_specialists[chosen_agent].system_prompt if chosen_agent in case_specialists else None
         )
@@ -381,6 +410,7 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
             case,
             run_result,
             llm_judge_model=judge_model,
+            groundedness_model=groundedness_model,
             registry=chosen_registry,
             specialists=case_specialists,
             system_prompt=chosen_system_prompt,
@@ -397,6 +427,8 @@ def handle_evaluate_multi_agent(args: argparse.Namespace) -> int:
         suffix = f" — {evaluation.failure_reason}" if not evaluation.passed else ""
         print(f"{case.id}: {status}{suffix}")
 
+    if retriever is not None and retriever.conn is not conn:
+        retriever.conn.close()
     if conn is not None:
         conn.close()
 

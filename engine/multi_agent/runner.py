@@ -3,6 +3,7 @@ import time
 from engine.models import EvaluationCase
 from engine.multi_agent.models import AgentSpec
 from engine.multi_agent.router import Router, RoutingError
+from engine.rag.retriever import Retriever
 from engine.runner import AgentRunner, RunResult
 
 
@@ -21,6 +22,7 @@ class MultiAgentRunner:
         case: EvaluationCase,
         router: Router,
         specialists: dict[str, AgentSpec],
+        retriever: Retriever | None = None,
     ) -> RunResult:
         history: list[dict] = []
 
@@ -56,7 +58,9 @@ class MultiAgentRunner:
             )
 
         specialist = specialists[chosen]
-        result = self._agent_runner.run(case, specialist.provider, specialist.registry)
+        result = self._agent_runner.run(
+            case, specialist.provider, specialist.registry, retriever=retriever
+        )
 
         return result.model_copy(
             update={

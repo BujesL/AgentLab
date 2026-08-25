@@ -4,6 +4,17 @@ Registro cronológico do trabalho neste projeto. Formato livre, focado em
 "o que mudou e por quê" — não em toda mudança de código, essa fica no
 histórico do git e em `docs/specs/*/tasks.md`.
 
+## 2026-08-25 — evaluate-multi-agent ganha --groundedness/--rag
+
+Pendência restante do V3: `evaluate-multi-agent` tinha `--llm-judge` mas não
+`--groundedness`/`--rag`, diferente de `evaluate`. `MultiAgentRunner.run`
+passou a aceitar `retriever` (repassado ao `AgentRunner` do especialista
+escolhido, mesmo padrão de `case.context` vencendo sobre retrieval
+automático); CLI ganhou os mesmos flags/wiring de `handle_evaluate`
+(inclusive fechamento da conexão dedicada do retriever quando `--no-persist`
+está ativo). Nenhuma mudança em `evaluate_case` — `groundedness_model` já era
+um parâmetro aceito, só não estava sendo passado nesse caminho.
+
 ## 2026-08-24 — V3 (multi-agent evaluation) + segurança avançada + dataset em escala
 
 ### Limpeza
