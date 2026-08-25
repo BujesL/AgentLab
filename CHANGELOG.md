@@ -4,6 +4,20 @@ Registro cronológico do trabalho neste projeto. Formato livre, focado em
 "o que mudou e por quê" — não em toda mudança de código, essa fica no
 histórico do git e em `docs/specs/*/tasks.md`.
 
+## 2026-08-25 — CI quebrado há dias: `postgres:16-alpine` sem pgvector
+
+Achado ao revisar se tudo estava mesmo verde: o job `test` do
+`ci.yml` estava falhando desde pelo menos o commit de 2026-08-24
+("CHANGELOG.md consolidando a sessão de 2026-08-24"), sem que ninguém
+notasse — `Apply database schema` dava `FeatureNotSupported: extension
+"vector" is not available`. Causa: `schema.sql` roda `CREATE EXTENSION
+vector` (usado pelo RAG pipeline), mas o service container do CI usava
+`postgres:16-alpine`, que não tem o binário da extensão instalado — só
+funcionava localmente porque o dev usa Neon, que já tem `pgvector`
+habilitado. Corrigido trocando a imagem por `pgvector/pgvector:pg16` no
+`ci.yml` **e** no `docker-compose.yml` de dev local (mesmo problema
+latente lá, mesmo que ninguém tivesse batido nele ainda).
+
 ## 2026-08-25 — V4 em produção: dashboard + API no ar (plano free)
 
 Stack completa da Rota A no ar, sem custo:

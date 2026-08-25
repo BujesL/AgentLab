@@ -14,7 +14,10 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        # pgvector/pgvector:pg16, not plain postgres:16 — schema.sql runs
+        # `CREATE EXTENSION vector` (RAG pipeline) and the extension binary
+        # isn't present in the vanilla image.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: agentlab
           POSTGRES_PASSWORD: agentlab_ci
