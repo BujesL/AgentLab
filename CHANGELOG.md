@@ -15,6 +15,24 @@ automático); CLI ganhou os mesmos flags/wiring de `handle_evaluate`
 está ativo). Nenhuma mudança em `evaluate_case` — `groundedness_model` já era
 um parâmetro aceito, só não estava sendo passado nesse caminho.
 
+## 2026-08-25 — testes E2E automatizados do dashboard
+
+Terceiro item pendente do V3: o dashboard só tinha validação manual até
+aqui. Adicionado Playwright (`apps/web/playwright.config.ts` +
+`apps/web/e2e/navigation.spec.ts`) cobrindo o caminho crítico sem depender
+de API/Postgres rodando: home → link para `/dashboard`, `/dashboard`
+degradando para o banner de erro de conexão (em vez de crashar) quando a
+API está fora do ar, e `/traces/[id]` degradando da mesma forma para um id
+inexistente/inalcançável. `npm run test:e2e` roda local; CI ganhou um step
+novo (`npx playwright install --with-deps chromium` + `npm run test:e2e`)
+depois do build do dashboard.
+
+Fora de escopo aqui: cobertura E2E contra uma API/Postgres real rodando em
+CI (os testes atuais só verificam o *fallback* gracioso) — isso exigiria
+subir os serviços da stack completa (Postgres + API + seed de dados) no
+workflow, tratado como próximo passo se a cobertura precisar ir além do
+"a página não quebra".
+
 ## 2026-08-25 — avaliador `pii_leak`
 
 Segunda extensão da spec de segurança avançada: novo avaliador

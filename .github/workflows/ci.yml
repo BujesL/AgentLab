@@ -65,3 +65,11 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Install Playwright browsers
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Web dashboard E2E tests
+        working-directory: apps/web
+        run: npm run test:e2e
