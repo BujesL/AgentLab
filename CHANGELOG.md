@@ -4,6 +4,19 @@ Registro cronológico do trabalho neste projeto. Formato livre, focado em
 "o que mudou e por quê" — não em toda mudança de código, essa fica no
 histórico do git e em `docs/specs/*/tasks.md`.
 
+## 2026-08-25 — V4 em produção: dashboard + API no ar (plano free)
+
+Stack completa da Rota A no ar, sem custo:
+- `apps/api` no Render (Web Service Docker, plano Free,
+  `docker/api.Dockerfile`) — `/health` responde `{"status":"ok"}` em
+  `https://agentlab-odgl.onrender.com` (build funcionou de primeira,
+  confirmando que a imagem Node+Python do Dockerfile está correta).
+- `apps/web` na Vercel, `API_URL` configurada apontando pro Render.
+- `DATABASE_URL` do Render reusa o Neon compartilhado que já existia (não
+  um branch de produção dedicado, diferente do que o plano recomendava
+  como ideal — decisão consciente para não gerar mais uma etapa manual
+  agora; revisar se algum dado real sensível passar a existir).
+
 ## 2026-08-25 — API em produção troca de Fly.io para Render (exigência: gratuito)
 
 Usuário pediu explicitamente que a infraestrutura fosse totalmente
