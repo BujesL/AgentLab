@@ -4,6 +4,19 @@ Registro cronológico do trabalho neste projeto. Formato livre, focado em
 "o que mudou e por quê" — não em toda mudança de código, essa fica no
 histórico do git e em `docs/specs/*/tasks.md`.
 
+## 2026-08-25 — primeiro deploy real do dashboard na Vercel
+
+Projeto `agent-lab` criado na Vercel (time ProShows) apontando pro
+`apps/web`. Primeiro deploy falhou (`No Output Directory named "public"`)
+porque o Framework Preset do projeto estava como "Other" em vez de
+"Next.js" — o build do Next.js roda certinho (gera `.next`), mas sem o
+preset correto a Vercel esperava um site estático exportado em `public/`.
+Corrigido no dashboard (Settings → General → Framework Preset →
+Next.js). `API_URL` ainda não configurada (a API de produção não existe
+ainda — Fly.io/Render, próximo passo do `docs/specs/deployment/plan.md`),
+então o dashboard em produção deve mostrar o banner de erro de conexão até
+lá, comportamento já coberto pelos testes E2E.
+
 ## 2026-08-25 — evaluate-multi-agent ganha --groundedness/--rag
 
 Pendência restante do V3: `evaluate-multi-agent` tinha `--llm-judge` mas não
