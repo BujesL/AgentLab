@@ -1,6 +1,8 @@
-# AgentLab - Ainda em desenvolvimento
+# AgentLab
 
-**Motor de engenharia para avaliar agentes de IA de forma sistemática e reproduzível** — tool calling, groundedness, safety, custo, latência e regressão entre versões, com quality gates que bloqueiam automaticamente um agente que piorou.
+**Motor de engenharia para avaliar agentes de IA de forma sistemática e reproduzível** — tool calling, groundedness, safety, multi-agente, custo, latência e regressão entre versões, com quality gates que bloqueiam automaticamente um agente que piorou.
+
+🔗 **Demo pública do dashboard:** [agent-lab-iota.vercel.app](https://agent-lab-iota.vercel.app) — Vercel (free) + API no Render (free) + Postgres no Neon. Dados de datasets de teste fictícios, sem informação real.
 
 ```
 Evaluation Case → Agent Runner → Trace → Evaluation Engine → Metrics → Experiment → Quality Gate
@@ -43,6 +45,10 @@ O `Evaluation Engine` roda um conjunto de avaliadores independentes por caso:
 | `handoff` | Determinístico | Em cenários multi-agente, se o router encaminhou para o especialista certo |
 | `groundedness` | LLM-as-a-Judge | Se a resposta de um agente RAG está inteiramente fundamentada no contexto recuperado |
 | `llm_judge` | LLM-as-a-Judge | Julgamento semântico de qualidade quando não há resposta objetiva comparável |
+| `prompt_leak` | Determinístico | Reprova se a resposta reproduz uma fatia grande do próprio system prompt |
+| `pii_leak` | Determinístico | Reprova se a resposta introduz CPF/e-mail/telefone/cartão que não veio do input do caso nem do contexto recuperado |
+
+Multi-agente (`evaluate-multi-agent`) reusa o mesmo `AgentRunner` por trás de um roteador (LLM ou determinístico para testes) que decide qual especialista atende cada caso — sem duplicar o loop de tool-calling. `--groundedness`/`--rag` funcionam nesse modo com a mesma paridade de flags do `evaluate` single-agent.
 
 Um `quality-gate` então aplica uma política declarativa (`quality-gates/default.json`) sobre o resumo agregado do experimento — por exemplo, `accuracy_pct >= 90`, `tool_selection_pct >= 95`, `regression_delta >= -3` — e retorna PASS/FAIL, pronto para travar um merge em CI.
 
@@ -71,8 +77,9 @@ AgentLab/
 │   ├── product/         # vision.md, requirements.md — escopo e critérios de aceite por fase
 │   ├── architecture/decisions/  # ADRs
 │   └── specs/           # spec.md + plan.md + tasks.md + contracts/ por feature
-├── tests/               # 117 testes (unit + integração), rodando contra Postgres real em CI
-└── .github/workflows/   # CI: pytest (unit + integração com Postgres em serviço), vitest da API, build do dashboard
+├── tests/               # 111 testes Python (unit + integração), rodando contra Postgres real em CI
+├── docker/              # Dockerfile de produção da API (Node + Python juntos)
+└── .github/workflows/   # CI: pytest, vitest da API, build do dashboard, E2E do dashboard (Playwright)
 ```
 
 ## Stack
@@ -80,11 +87,12 @@ AgentLab/
 | Camada | Tecnologia |
 |---|---|
 | Evaluation Engine | Python 3.12 |
-| Persistência | PostgreSQL (Neon gerenciado em dev — ADR-005) |
+| Persistência | PostgreSQL (Neon gerenciado — ADR-005) |
 | API | Fastify 5 + TypeScript |
 | Dashboard | Next.js 16, React 19, Tailwind |
-| Testes | pytest (unit + integração), Vitest (API) — 117 testes Python + suíte da API |
+| Testes | pytest (unit + integração), Vitest (API), Playwright (E2E do dashboard) |
 | CI/CD | GitHub Actions — Postgres real como serviço, não mockado |
+| Deploy (produção, plano free) | Vercel (`apps/web`) + Render (`apps/api`, Docker) + Neon (banco) |
 | Providers de LLM implementados | Mock (determinístico, scriptável via JSON) e Ollama (modelos locais, ex. `qwen2.5:7b`) |
 
 `ProviderAdapter` é a interface abstrata que desacopla o runner do provider — um adapter para Claude/OpenAI é possível de adicionar sem tocar no núcleo, mas **hoje não está implementado**; só Mock e Ollama existem no código.
@@ -110,6 +118,12 @@ python -m engine.cli evaluate datasets/service-desk-mvp/dataset.json \
 
 # 5. Aplicar a política de quality gate sobre um experimento já rodado
 python -m engine.cli quality-gate <experiment_id> --policy quality-gates/default.json
+
+# 6. Avaliação multi-agente (router decide qual especialista atende cada caso)
+python -m engine.cli evaluate-multi-agent datasets/multi-agent-mvp/dataset.json \
+  --specialists datasets/multi-agent-mvp/specialists.json \
+  --provider mock --scripts datasets/multi-agent-mvp/scripts.json \
+  --router mock --router-routes datasets/multi-agent-mvp/router_routes.json
 ```
 
 ```bash
@@ -120,11 +134,16 @@ python -m pytest tests/integration -v   # precisa de DATABASE_URL configurado
 # API e dashboard
 cd apps/api && npm install && npm test
 cd apps/web && npm install && npm run dev
+
+# E2E do dashboard (Playwright) — não depende de API/Postgres rodando
+cd apps/web && npm run test:e2e
 ```
 
 ## Status
 
-MVP (núcleo do Evaluation Engine) implementado e validado contra dois providers reais, com CI rodando 117 testes contra Postgres de verdade. `apps/api` e `apps/web` já têm código e testes próprios, ainda em evolução junto com as fases V1/V1.5 do roadmap (prompt versioning, regression suite automatizada em CI, RAG evaluation, multi-agent evaluation, dashboard completo). Escopo e critério de aceite de cada fase em `docs/product/requirements.md`; visão de produto e definição de sucesso em `docs/product/vision.md`.
+MVP → V1 → V2 (RAG/groundedness/LLM-as-a-Judge) → V3 (multi-agent evaluation, safety avançada) completos e validados contra providers reais (mock + Ollama), com CI rodando pytest + Vitest + Playwright. V4 (deployment) está no ar em produção — dashboard e API publicados no plano gratuito de cada provedor (ver link no topo). Detalhe completo de cada fase, achados reais e decisões de escopo em `CHANGELOG.md`; escopo e critério de aceite por fase em `docs/product/requirements.md`; visão de produto em `docs/product/vision.md`; plano de deployment em `docs/specs/deployment/`.
+
+Pendências conhecidas, sem urgência: banco de produção reusa o Neon compartilhado com dev/CI (não é um branch isolado); red-teaming automatizado e ataques multi-turno de verdade continuam fora de escopo (`docs/specs/advanced-safety/spec.md`).
 
 ---
 
