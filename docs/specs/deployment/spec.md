@@ -108,4 +108,7 @@ primeiro passo concreto independente da rota escolhida.
 - [x] Escopo desta fase (Dockerfiles + CD mínimo) e o que fica de fora
       (autoscaling, observability de infra, auth, migração de banco) estão
       explícitos.
-- [ ] Rota escolhida pelo usuário (pendente — ver "Próximos passos").
+- [x] Rota escolhida pelo usuário: **Rota A (cloud gerenciado)** — Vercel
+      (`apps/web`) + PaaS Node (`apps/api`) + Neon (banco, já em uso).
+      Decisão registrada em 2026-08-25. Ver `docs/specs/deployment/plan.md`
+      para o desenho detalhado.

@@ -15,6 +15,24 @@ automático); CLI ganhou os mesmos flags/wiring de `handle_evaluate`
 está ativo). Nenhuma mudança em `evaluate_case` — `groundedness_model` já era
 um parâmetro aceito, só não estava sendo passado nesse caminho.
 
+## 2026-08-25 — V4 (deployment): Rota A escolhida + primeira etapa
+
+Usuário escolheu a Rota A (cloud gerenciado) entre as duas mapeadas na
+spec. `docs/specs/deployment/plan.md` criado com o desenho detalhado.
+
+Achado real ao desenhar o plano: `apps/api` não é Node puro — a rota
+`/evaluate` (`apps/api/src/routes/evaluate.ts`) faz `spawn("python", ...)`
+contra `engine/`, então um buildpack Node genérico não serve; a imagem
+precisa de Node + Python juntos. `docker/api.Dockerfile` criado para
+cobrir isso (Fly.io/Render Docker Web Service). `apps/api` ganhou scripts
+`build`/`start` que não existiam (só tinha `dev` via `tsx`); precisou de
+`tsconfig.build.json` separado porque compilar com a config de
+desenvolvimento (que inclui `tests/`) fazia o `vitest run` descobrir e
+rodar os testes duas vezes (fonte + compilado) — achado real, corrigido.
+Dockerfile ainda não testado com `docker build` de verdade (sem Docker
+neste ambiente); build/start do Node foram verificados localmente sem
+container.
+
 ## 2026-08-25 — V4 (deployment): spec de planejamento
 
 Quarto item pendente: V4 não tinha nenhum documento ainda.
