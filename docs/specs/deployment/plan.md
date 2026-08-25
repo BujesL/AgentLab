@@ -30,18 +30,26 @@ e Render Docker Web Service os dois servem).
 - Root directory do projeto Vercel: `apps/web` (monorepo — Vercel suporta
   isso nativamente via "Root Directory" na configuração do projeto).
 
-## Peça 2 — `apps/api` → Fly.io (ou Render Docker Web Service)
+## Peça 2 — `apps/api` → Render (Docker Web Service, plano Free)
+
+Trocado de Fly.io para Render em 2026-08-25: o usuário pediu explicitamente
+que o app fosse **totalmente gratuito**, e o Fly.io removeu o tier free em
+2024 (exige cartão e cobra por uso, mesmo que baixo). O Render tem um
+"Free Web Service" sem cartão obrigatório — trade-off real: o serviço
+"dorme" após ~15 min sem tráfego e leva ~30s pra acordar na próxima
+requisição (cold start), mas não cobra nada.
 
 - `docker/api.Dockerfile`: imagem base Node, instala Python 3.12 +
   `engine/requirements.txt`, copia o repo inteiro (não só `apps/api`),
   `npm ci` dentro de `apps/api`, expõe `PORT` (já lido de
   `process.env.PORT` em `src/index.ts:12`, nenhuma mudança de código
   necessária).
+- No Render: "New Web Service" → conectar o repo GitHub → Environment
+  "Docker" → **Dockerfile Path**: `docker/api.Dockerfile` → **Docker Build
+  Context Directory**: raiz do repo (não `apps/api/`, pelo mesmo motivo do
+  Fly — o Dockerfile precisa do monorepo inteiro). Plano **Free**.
 - Variável de ambiente: `DATABASE_URL` apontando para o Neon de produção
   (não reusar a connection string de dev/CI).
-- Fly.io escolhido sobre Render nesta primeira passada só por ter
-  `fly.toml` mais simples para um serviço único — sem preferência forte,
-  Render Docker Web Service é equivalente se o usuário já tiver conta lá.
 
 ## Peça 3 — Neon (banco)
 
@@ -56,10 +64,12 @@ e Render Docker Web Service os dois servem).
 - Vercel: deploy automático já é o comportamento padrão ao conectar o repo
   GitHub (preview deploy por PR, produção no merge em `main`) — não
   precisa de step novo no `ci.yml`.
-- Fly.io: `fly deploy` como step novo em `.github/workflows/ci.yml`,
-  **depois** do job de testes passar (nunca em paralelo) — mesmo princípio
-  do CI atual (falha em qualquer etapa anterior bloqueia o deploy).
-  Precisa de `FLY_API_TOKEN` como GitHub secret.
+- Render: deploy automático já é o comportamento padrão ao conectar o repo
+  GitHub (redeploy no push em `main`) — não precisa de step novo no
+  `ci.yml`, mesmo padrão do Vercel. Não bloqueia no CI passar antes (Render
+  não oferece isso nativamente no plano Free); mitigado observando o painel
+  de deploy do Render após o push, mesmo processo manual que já usamos para
+  validar o deploy do Vercel.
 
 ## Feito nesta sessão (etapa 1 do plano)
 
@@ -88,10 +98,12 @@ e Render Docker Web Service os dois servem).
 2. Criar o projeto Vercel apontando para `apps/web` (precisa da conta do
    usuário — no MCP do Vercel já conectado a esta sessão).
 3. Criar branch de produção no Neon.
-4. Criar app no Fly.io, configurar `DATABASE_URL` como secret, primeiro
-   deploy manual (`fly deploy`) para validar a imagem antes de automatizar.
-5. Automatizar (2)-(4) no CD só depois do primeiro deploy manual funcionar
-   — não vale a pena depurar CD e Dockerfile ao mesmo tempo.
+4. Criar o Web Service no Render (plano Free), configurar `DATABASE_URL`
+   como env var, validar o primeiro deploy (build usando
+   `docker/api.Dockerfile`) antes de configurar `API_URL` no Vercel.
+5. Depois do primeiro deploy do Render funcionar, configurar `API_URL` no
+   projeto Vercel apontando pra URL pública do Render e re-disparar o
+   deploy do dashboard.
 
 ## Fora desta etapa
 

@@ -4,6 +4,16 @@ Registro cronológico do trabalho neste projeto. Formato livre, focado em
 "o que mudou e por quê" — não em toda mudança de código, essa fica no
 histórico do git e em `docs/specs/*/tasks.md`.
 
+## 2026-08-25 — API em produção troca de Fly.io para Render (exigência: gratuito)
+
+Usuário pediu explicitamente que a infraestrutura fosse totalmente
+gratuita. Fly.io removeu seu tier free em 2024 (exige cartão, cobra por
+uso mesmo que baixo) — trocado por Render "Free Web Service" (sem cartão
+obrigatório; trade-off real: dorme após ~15min sem tráfego, cold start de
+~30s no próximo acesso). `docs/specs/deployment/plan.md` atualizado. Nada
+de código muda — o mesmo `docker/api.Dockerfile` serve pros dois
+provedores.
+
 ## 2026-08-25 — primeiro deploy real do dashboard na Vercel
 
 Projeto `agent-lab` criado na Vercel (time ProShows) apontando pro
