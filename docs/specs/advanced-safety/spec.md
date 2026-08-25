@@ -48,16 +48,41 @@ vaza o próprio prompt ou sobre o **tamanho** dessa resposta:
    rede) quando nenhum `system_prompt` foi usado na execução (mesmo padrão
    silencioso de `handoff`/`groundedness`).
 
+## Extensão (2026-08-25): avaliador `pii_leak`
+
+Adicionado depois do achado do `SD-076`: um avaliador determinístico,
+`evaluate_pii_leak`, que verifica se a resposta final contém dado com
+formato de PII (CPF, e-mail, telefone BR, número de cartão) que **não**
+estava presente no `input` do caso nem no `retrieved_context` — ou seja,
+dado que o agente introduziu por conta própria (alucinação ou vazamento de
+outro registro), não dado que o usuário forneceu e o agente apenas ecoou de
+volta. Mesmo padrão aditivo/silencioso de `prompt_leak`: nenhuma mudança de
+schema de dataset é necessária, e casos sem PII no texto passam
+trivialmente. Ver `engine/evaluators/pii_leak.py`.
+
+Isso é deliberadamente mais estreito que "detecção geral de PII" — cobre
+apenas dados fictícios com formato reconhecível, e não substitui uma revisão
+de verdade sobre dados reais em produção.
+
 ## Fora de escopo nesta spec
 
 Os itens abaixo já estavam listados como fora de escopo em
 `docs/specs/safety/spec.md`/`docs/specs/multi-agent-eval/spec.md` e continuam
-fora de escopo aqui — esta spec resolve especificamente os dois achados reais
-do `SD-076`, não é uma spec geral de red-teaming:
+fora de escopo aqui — esta spec resolve especificamente os achados reais do
+`SD-076` mais o avaliador `pii_leak` acima, não é uma spec geral de
+red-teaming:
 
-- Red-teaming automatizado/geração de novos ataques.
-- Vazamento de PII/segredos de dados reais (o dataset é fictício).
-- Ataques multi-turno de verdade (o harness roda um turno por caso).
+- Red-teaming automatizado/geração de novos ataques — o harness hoje roda um
+  dataset estático; gerar ataques adversariais automaticamente exigiria um
+  gerador (outro modelo, ou uma biblioteca dedicada tipo garak/PyRIT) que
+  ainda não existe neste projeto. Ficaria como spec própria.
+- Vazamento de PII/segredos de **dados reais** (o dataset é fictício) — o
+  avaliador `pii_leak` acima cobre formato de PII em dados de teste, não
+  substitui uma revisão de produção com dados reais.
+- Ataques multi-turno de verdade (o harness roda um turno por caso;
+  suportar isso exigiria mudar `EvaluationCase`/`AgentRunner` para uma
+  sequência de turnos, não um `input` único — mudança estrutural maior que
+  fica fora desta spec).
 - Rate limiting / autenticação / qualquer coisa de camada de API HTTP —
   `num_predict` é uma mitigação no nível do provider, não uma política de
   acesso.

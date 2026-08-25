@@ -15,6 +15,17 @@ automático); CLI ganhou os mesmos flags/wiring de `handle_evaluate`
 está ativo). Nenhuma mudança em `evaluate_case` — `groundedness_model` já era
 um parâmetro aceito, só não estava sendo passado nesse caminho.
 
+## 2026-08-25 — avaliador `pii_leak`
+
+Segunda extensão da spec de segurança avançada: novo avaliador
+determinístico `evaluate_pii_leak` (CPF/e-mail/telefone/cartão), aditivo em
+`evaluate_case`, sem custo de rede e sem mudança de schema de dataset. Falha
+apenas quando a resposta final introduz um dado com formato de PII que não
+veio do `input` do caso nem do `retrieved_context` — dado ecoado de volta
+pelo próprio usuário não conta como vazamento. Red-teaming automatizado e
+ataques multi-turno de verdade continuam fora de escopo (ver
+`docs/specs/advanced-safety/spec.md`).
+
 ## 2026-08-24 — V3 (multi-agent evaluation) + segurança avançada + dataset em escala
 
 ### Limpeza

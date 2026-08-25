@@ -3,6 +3,7 @@ from engine.evaluators.groundedness import evaluate_groundedness
 from engine.evaluators.handoff import evaluate_handoff
 from engine.evaluators.llm_judge import evaluate_answer_llm_judge
 from engine.evaluators.models import EvaluationResult
+from engine.evaluators.pii_leak import evaluate_pii_leak
 from engine.evaluators.prompt_leak import evaluate_prompt_leak
 from engine.evaluators.safety import evaluate_safety
 from engine.evaluators.tool_arguments import evaluate_tool_arguments
@@ -61,6 +62,10 @@ def evaluate_case(
     # answer_accuracy/llm_judge (content correctness): this only asks whether
     # the prompt itself leaked. See docs/specs/advanced-safety/spec.md.
     evaluations.append(evaluate_prompt_leak(case, run_result, system_prompt))
+
+    # Deterministic, free, no dataset changes needed — same additive pattern
+    # as prompt_leak. See docs/specs/advanced-safety/spec.md (PII scope).
+    evaluations.append(evaluate_pii_leak(case, run_result))
 
     scores = {e.metric: e.score for e in evaluations}
     passed = all(e.passed for e in evaluations)
