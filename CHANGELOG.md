@@ -16,6 +16,16 @@ Stack completa da Rota A no ar, sem custo:
   um branch de produção dedicado, diferente do que o plano recomendava
   como ideal — decisão consciente para não gerar mais uma etapa manual
   agora; revisar se algum dado real sensível passar a existir).
+- Achado real ao validar: o projeto Vercel tinha **Vercel Authentication
+  (SSO)** habilitada por padrão (`deploymentType:
+  all_except_custom_domains`), então o dashboard respondia 302 pra tela de
+  login da Vercel em qualquer acesso, mesmo sem senha. Desativada depois
+  de confirmação explícita do usuário — dados no Neon são de datasets de
+  teste fictícios, não há problema em ficar público.
+- Confirmado end-to-end contra produção: `/dashboard` carrega dados reais
+  do Neon através da API no Render (20 experiments, 128 evaluations no
+  momento da validação) — não é mais só o fallback gracioso testado pelos
+  E2E.
 
 ## 2026-08-25 — API em produção troca de Fly.io para Render (exigência: gratuito)
 

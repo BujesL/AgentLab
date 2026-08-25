@@ -71,6 +71,20 @@ requisição (cold start), mas não cobra nada.
   de deploy do Render após o push, mesmo processo manual que já usamos para
   validar o deploy do Vercel.
 
+## Status: no ar (2026-08-25)
+
+Rota A completa em produção, gratuita:
+- Vercel: `apps/web` em https://agent-lab-pro-shows.vercel.app,
+  `API_URL` configurada, Vercel Authentication desativada (estava
+  habilitada por padrão e bloqueava acesso público — confirmado com o
+  usuário antes de desativar).
+- Render: `apps/api` em https://agentlab-odgl.onrender.com, plano Free,
+  build a partir de `docker/api.Dockerfile`, `/health` respondendo 200.
+- Neon: `DATABASE_URL` reusa o banco compartilhado de dev/CI, não um
+  branch de produção isolado (pendência conhecida, ver seção "Peça 3").
+- Validado end-to-end: `/dashboard` em produção carrega dados reais via
+  API/banco, não só o fallback gracioso.
+
 ## Feito nesta sessão (etapa 1 do plano)
 
 - `apps/api/package.json`: scripts `build` (`tsc -p tsconfig.build.json`) e
