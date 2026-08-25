@@ -15,6 +15,18 @@ automático); CLI ganhou os mesmos flags/wiring de `handle_evaluate`
 está ativo). Nenhuma mudança em `evaluate_case` — `groundedness_model` já era
 um parâmetro aceito, só não estava sendo passado nesse caminho.
 
+## 2026-08-25 — V4 (deployment): spec de planejamento
+
+Quarto item pendente: V4 não tinha nenhum documento ainda.
+`docs/specs/deployment/spec.md` criado — só planejamento, nenhuma
+implementação. Mapeia as três peças do sistema (`engine` CLI sob demanda,
+`apps/api` serviço de longa duração, `apps/web` Next.js) e duas rotas
+possíveis (cloud gerenciado: Vercel + Fly/Render + Neon; self-hosted:
+Docker Compose com Dockerfiles novos para api/web ao lado do Postgres já
+existente), sem escolher uma — a escolha depende de uso pretendido
+(pessoal/portfólio vs. terceiros), que ainda não foi definido. Próximo
+passo real: decidir a rota, depois escrever `plan.md`/`tasks.md`.
+
 ## 2026-08-25 — testes E2E automatizados do dashboard
 
 Terceiro item pendente do V3: o dashboard só tinha validação manual até
